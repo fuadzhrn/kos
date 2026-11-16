@@ -1,0 +1,73 @@
+# ==========================================================
+# .gitignore - Sistem Informasi Kos Aron (PHP Native)
+# ----------------------------------------------------------
+# File PHP, HTML, CSS, JavaScript, dan aset frontend
+# (termasuk includes/config.php dan assets/images/) TETAP di-commit.
+# includes/config.php tidak berisi rahasia. Kredensial database
+# nanti disimpan di file lokal yang diabaikan di bawah ini.
+# ==========================================================
+
+# --- Kredensial & konfigurasi sensitif --------------------
+.env
+.env.*
+!.env.example
+*.local.php
+!*.local.example.php
+auth.json
+*.pem
+*.key
+*.p12
+credentials*.json
+
+# --- Database dump ----------------------------------------
+# Dump berisi data (bisa memuat data penghuni/pembayaran).
+# Jika ingin menyimpan struktur tabel TANPA data, beri nama schema.sql.
+*.sql
+*.sql.gz
+*.sql.zip
+*.dump
+*.sqlite
+*.sqlite3
+!**/schema.sql
+
+# --- File unggahan pengguna (tahap backend) ---------------
+# Mis. bukti pembayaran penghuni: jangan masuk repository.
+**/uploads/*
+!**/uploads/.gitkeep
+
+# --- Log & file sementara ---------------------------------
+*.log
+error_log
+logs/
+tmp/
+temp/
+*.tmp
+*.cache
+.phpunit.result.cache
+
+# --- Backup lokal -----------------------------------------
+*.bak
+*.backup
+*.old
+*.orig
+*~
+backup/
+backups/
+
+# --- Dependensi (jika nanti dipakai) ----------------------
+vendor/
+node_modules/
+
+# --- Editor / IDE -----------------------------------------
+.vscode/
+.idea/
+.cursor/
+*.code-workspace
+*.swp
+*.swo
+.claude/settings.local.json
+
+# --- Sistem operasi ---------------------------------------
+Thumbs.db
+desktop.ini
+.DS_Store
