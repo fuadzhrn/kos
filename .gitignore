@@ -36,9 +36,11 @@ credentials*.json
 !**/uploads/.gitkeep
 
 # --- Log & file sementara ---------------------------------
-*.log
-error_log
+# Log Git Backup otomatis: logs/git-backup.log (+ rotasi .log.1)
 logs/
+*.log
+*.log.1
+error_log
 tmp/
 temp/
 *.tmp
