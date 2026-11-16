@@ -1,0 +1,1353 @@
+/* ==========================================================
+   KOS ARON - Stylesheet global
+   ----------------------------------------------------------
+   GLOBAL
+     1. Variabel (design token)
+     2. Reset & dasar
+     3. Tipografi & utilitas
+     4. Layout (container, section, grid)
+     5. Tombol
+     6. Form
+     7. Navbar
+     8. Footer
+   KOMPONEN
+     9. Page header & breadcrumb
+     10. Status (badge) & card kamar
+     11. Komponen bantu (foto, notice, empty state, tabel info, link)
+   HALAMAN
+     12. Beranda
+     13. Daftar kamar
+     14. Detail kamar
+     15. Tentang
+     16. Kontak
+     17. Login
+   RESPONSIVE
+     18. Tablet (<= 1023px)
+     19. Mobile (<= 767px)
+   ========================================================== */
+
+
+/* ==========================================================
+   GLOBAL
+   ========================================================== */
+
+/* 1. Variabel ---------------------------------------------- */
+:root {
+    --primary: #2563EB;
+    --primary-hover: #1D4ED8;
+    --bg: #FFFFFF;
+    --bg-secondary: #F9FAFB;
+    --soft-gray: #F3F4F6;
+    --border: #E5E7EB;
+    --border-input: #D1D5DB;
+    --heading: #1F2937;
+    --text: #4B5563;
+    --muted: #6B7280;
+    --success: #15803D;
+
+    --font-heading: 'Montserrat', Arial, sans-serif;
+    --font-body: 'Poppins', Arial, sans-serif;
+
+    --container: 1120px;
+    --gutter: 20px;
+    --navbar-height: 70px;
+    --section-space: 64px;
+
+    --radius-card: 6px;
+    --radius-btn: 5px;
+}
+
+/* 2. Reset & dasar ----------------------------------------- */
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+html {
+    -webkit-text-size-adjust: 100%;
+}
+
+body {
+    margin: 0;
+    font-family: var(--font-body);
+    font-size: 15px;
+    font-weight: 400;
+    line-height: 1.65;
+    color: var(--text);
+    background: var(--bg);
+    overflow-x: hidden;
+}
+
+body.nav-open {
+    overflow: hidden;
+}
+
+img {
+    display: block;
+    max-width: 100%;
+    height: auto;
+}
+
+a {
+    color: var(--primary);
+    text-decoration: none;
+}
+
+a:hover {
+    color: var(--primary-hover);
+}
+
+ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+p {
+    margin: 0 0 1em;
+}
+
+p:last-child {
+    margin-bottom: 0;
+}
+
+:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+}
+
+/* Elemen dengan atribut hidden selalu disembunyikan,
+   walaupun kelasnya memakai display: flex/grid. */
+[hidden] {
+    display: none !important;
+}
+
+/* 3. Tipografi & utilitas ---------------------------------- */
+h1, h2, h3, h4 {
+    margin: 0 0 0.5em;
+    font-family: var(--font-heading);
+    color: var(--heading);
+    line-height: 1.3;
+}
+
+h1 {
+    font-size: 32px;
+    font-weight: 700;
+}
+
+h2 {
+    font-size: 24px;
+    font-weight: 600;
+}
+
+h3 {
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.text-muted {
+    color: var(--muted);
+}
+
+.teks-catatan {
+    display: block;
+    margin-top: 4px;
+    font-size: 13px;
+    color: var(--muted);
+}
+
+.mt-section {
+    margin-top: 32px;
+}
+
+/* Disembunyikan secara visual, tetap dibaca pembaca layar */
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+/* 4. Layout ------------------------------------------------ */
+.container {
+    width: 100%;
+    max-width: calc(var(--container) + var(--gutter) * 2);
+    margin: 0 auto;
+    padding: 0 var(--gutter);
+}
+
+.site-main {
+    min-height: calc(100vh - var(--navbar-height) - 220px);
+}
+
+.section {
+    padding: var(--section-space) 0;
+}
+
+.section--tight {
+    padding-top: 40px;
+}
+
+.section--alt {
+    background: var(--bg-secondary);
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+}
+
+.section--border {
+    border-top: 1px solid var(--border);
+}
+
+.section-head {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 28px;
+}
+
+.section-head p {
+    margin: 4px 0 0;
+    color: var(--muted);
+}
+
+/* Dua kolom seimbang (Tentang, Kontak) */
+.split-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    align-items: center;
+    gap: 48px;
+}
+
+.split-grid--top {
+    align-items: start;
+}
+
+.grid-kamar {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 24px;
+}
+
+/* 5. Tombol ------------------------------------------------ */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 42px;
+    padding: 9px 20px;
+    font-family: var(--font-body);
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 1.2;
+    text-align: center;
+    border: 1px solid transparent;
+    border-radius: var(--radius-btn);
+    cursor: pointer;
+    transition: background-color .15s, border-color .15s, color .15s;
+}
+
+.btn-primary {
+    color: #fff;
+    background: var(--primary);
+    border-color: var(--primary);
+}
+
+.btn-primary:hover {
+    color: #fff;
+    background: var(--primary-hover);
+    border-color: var(--primary-hover);
+}
+
+.btn-outline {
+    color: var(--primary);
+    background: var(--bg);
+    border-color: var(--border);
+}
+
+.btn-outline:hover {
+    color: var(--primary-hover);
+    border-color: var(--primary);
+}
+
+/* Tombol nonaktif (mis. WhatsApp sebelum nomor diatur) */
+.btn.is-disabled {
+    color: var(--muted);
+    background: var(--soft-gray);
+    border-color: var(--border);
+    cursor: not-allowed;
+}
+
+.btn-block {
+    display: flex;
+    width: 100%;
+}
+
+/* 6. Form -------------------------------------------------- */
+.form-group + .form-group {
+    margin-top: 16px;
+}
+
+.form-group label,
+.filter-field label {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--heading);
+}
+
+.form-control {
+    display: block;
+    width: 100%;
+    height: 42px;
+    padding: 8px 12px;
+    font-family: var(--font-body);
+    font-size: 14px;
+    color: var(--heading);
+    background-color: var(--bg);
+    border: 1px solid var(--border-input);
+    border-radius: var(--radius-btn);
+    transition: border-color .15s, box-shadow .15s;
+}
+
+.form-control::placeholder {
+    color: #9CA3AF;
+}
+
+.form-control:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
+select.form-control {
+    padding-right: 36px;
+    cursor: pointer;
+    -webkit-appearance: none;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%236B7280' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+}
+
+/* Input password + tombol tampilkan/sembunyikan */
+.input-password {
+    position: relative;
+}
+
+.input-password .form-control {
+    padding-right: 112px;
+}
+
+.input-password__toggle {
+    position: absolute;
+    top: 50%;
+    right: 4px;
+    height: 34px;
+    padding: 0 12px;
+    font-family: var(--font-body);
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--primary);
+    background: transparent;
+    border: 0;
+    border-radius: 4px;
+    cursor: pointer;
+    transform: translateY(-50%);
+}
+
+.input-password__toggle:hover {
+    background: var(--soft-gray);
+}
+
+/* 7. Navbar ------------------------------------------------ */
+.site-header {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: var(--bg);
+    border-bottom: 1px solid var(--border);
+}
+
+.navbar {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    height: var(--navbar-height);
+}
+
+.brand {
+    font-family: var(--font-heading);
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    color: var(--heading);
+    white-space: nowrap;
+}
+
+.brand:hover {
+    color: var(--heading);
+}
+
+.nav-menu {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex: 1;
+}
+
+.nav-links {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin: 0 auto;
+}
+
+.nav-links a {
+    display: block;
+    padding: 8px 14px;
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--text);
+    border-radius: var(--radius-btn);
+}
+
+.nav-links a:hover {
+    color: var(--heading);
+    background: var(--soft-gray);
+}
+
+.nav-links a.is-active {
+    color: var(--primary);
+}
+
+.nav-login {
+    min-width: 92px;
+}
+
+.nav-toggle {
+    display: none;
+    flex-direction: column;
+    justify-content: center;
+    gap: 5px;
+    width: 42px;
+    height: 42px;
+    margin-left: auto;
+    padding: 0 10px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-btn);
+    cursor: pointer;
+}
+
+.nav-toggle span {
+    display: block;
+    height: 2px;
+    background: var(--heading);
+    border-radius: 2px;
+    transition: transform .2s, opacity .2s;
+}
+
+.nav-toggle[aria-expanded="true"] span:nth-child(1) {
+    transform: translateY(7px) rotate(45deg);
+}
+
+.nav-toggle[aria-expanded="true"] span:nth-child(2) {
+    opacity: 0;
+}
+
+.nav-toggle[aria-expanded="true"] span:nth-child(3) {
+    transform: translateY(-7px) rotate(-45deg);
+}
+
+/* 8. Footer ------------------------------------------------ */
+.site-footer {
+    font-size: 14px;
+    background: var(--bg-secondary);
+    border-top: 1px solid var(--border);
+}
+
+.footer-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+    gap: 32px;
+    padding-top: 40px;
+    padding-bottom: 32px;
+}
+
+.footer-brand {
+    margin-bottom: 6px;
+    font-family: var(--font-heading);
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--heading);
+}
+
+.footer-info p {
+    margin-bottom: 4px;
+}
+
+.footer-note {
+    max-width: 380px;
+    margin-top: 10px;
+    font-size: 13px;
+    color: var(--muted);
+}
+
+.footer-title {
+    margin-bottom: 10px;
+    font-weight: 500;
+    color: var(--heading);
+}
+
+.footer-nav li + li {
+    margin-top: 6px;
+}
+
+.footer-nav a {
+    color: var(--text);
+}
+
+.footer-nav a:hover {
+    color: var(--primary);
+}
+
+.footer-bottom {
+    padding: 16px 0;
+    font-size: 13px;
+    color: var(--muted);
+    border-top: 1px solid var(--border);
+}
+
+
+/* ==========================================================
+   KOMPONEN
+   ========================================================== */
+
+/* 9. Page header & breadcrumb ------------------------------ */
+.page-header {
+    padding: 40px 0;
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border);
+}
+
+.page-header h1 {
+    margin-bottom: 6px;
+}
+
+.page-header p {
+    max-width: 640px;
+    margin: 0;
+    color: var(--muted);
+}
+
+.breadcrumb {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: 0 0 20px;
+    padding: 0;
+    list-style: none;
+    font-size: 13px;
+    color: var(--muted);
+}
+
+.breadcrumb a {
+    color: var(--muted);
+}
+
+.breadcrumb a:hover {
+    color: var(--primary);
+}
+
+.breadcrumb li + li::before {
+    content: "/";
+    margin-right: 6px;
+}
+
+/* 10. Status (badge) & card kamar -------------------------- */
+/* Status kamar: teks berwarna dengan titik kecil */
+.badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.badge::before {
+    content: "";
+    width: 7px;
+    height: 7px;
+    background: currentColor;
+    border-radius: 50%;
+}
+
+.badge--kosong {
+    color: var(--success);
+}
+
+.badge--terisi {
+    color: var(--muted);
+}
+
+.card-kamar {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-card);
+    overflow: hidden;
+    transition: border-color .15s;
+}
+
+.card-kamar:hover {
+    border-color: var(--border-input);
+}
+
+.card-kamar__foto {
+    display: block;
+    aspect-ratio: 4 / 3;
+    background: var(--soft-gray);
+    border-bottom: 1px solid var(--border);
+}
+
+.card-kamar__foto img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.card-kamar__body {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    padding: 18px;
+}
+
+.card-kamar__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 4px;
+}
+
+.card-kamar__judul {
+    margin: 0;
+    font-size: 17px;
+}
+
+.card-kamar__judul a {
+    color: var(--heading);
+}
+
+.card-kamar__judul a:hover {
+    color: var(--primary);
+}
+
+.card-kamar__fasilitas {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: 10px 0 16px;
+}
+
+.card-kamar__fasilitas li {
+    padding: 2px 10px;
+    font-size: 12.5px;
+    color: var(--text);
+    background: var(--soft-gray);
+    border-radius: 4px;
+}
+
+.card-kamar__footer {
+    margin-top: auto;
+    padding-top: 4px;
+}
+
+.card-kamar__harga {
+    margin-bottom: 14px;
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--heading);
+}
+
+.card-kamar__harga span {
+    font-size: 13px;
+    font-weight: 400;
+    color: var(--muted);
+}
+
+/* 11. Komponen bantu --------------------------------------- */
+/* Bingkai foto 4:3 (hero, tentang, detail kamar) */
+.foto-frame {
+    aspect-ratio: 4 / 3;
+    background: var(--soft-gray);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-card);
+    overflow: hidden;
+}
+
+.foto-frame img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.notice {
+    padding: 12px 16px;
+    font-size: 13.5px;
+    color: var(--text);
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--primary);
+    border-radius: var(--radius-btn);
+}
+
+.notice--muted {
+    margin-bottom: 20px;
+    border-left-color: #9CA3AF;
+}
+
+.empty-state {
+    padding: 28px 24px;
+    text-align: center;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-card);
+}
+
+.empty-state p {
+    margin-bottom: 6px;
+    color: var(--heading);
+}
+
+.empty-state a {
+    font-weight: 500;
+}
+
+.empty-state .btn {
+    margin-top: 10px;
+}
+
+.empty-state--lg {
+    padding: 48px 24px;
+}
+
+.empty-state--lg h1 {
+    margin-bottom: 8px;
+    font-size: 24px;
+}
+
+.empty-state--lg p {
+    margin-bottom: 20px;
+    color: var(--text);
+}
+
+/* Tabel label-nilai sederhana (detail, tentang, kontak) */
+.info-tabel {
+    margin: 16px 0 0;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-card);
+}
+
+.info-tabel > div {
+    display: grid;
+    grid-template-columns: 200px minmax(0, 1fr);
+    gap: 16px;
+    padding: 12px 18px;
+}
+
+.info-tabel > div + div {
+    border-top: 1px solid var(--border);
+}
+
+.info-tabel dt {
+    font-weight: 500;
+    color: var(--heading);
+}
+
+.info-tabel dd {
+    margin: 0;
+    overflow-wrap: anywhere;
+}
+
+.link-more {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.link-more:hover {
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+
+
+/* ==========================================================
+   HALAMAN
+   ========================================================== */
+
+/* 12. Beranda ---------------------------------------------- */
+.hero {
+    padding: 56px 0;
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border);
+}
+
+.hero-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    align-items: center;
+    gap: 48px;
+}
+
+.eyebrow {
+    margin-bottom: 10px;
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--primary);
+}
+
+.hero h1 {
+    margin-bottom: 12px;
+    font-size: 36px;
+}
+
+.hero-text p:not(.eyebrow) {
+    max-width: 440px;
+    margin-bottom: 24px;
+    font-size: 16px;
+}
+
+.about-short {
+    max-width: 680px;
+}
+
+.about-short p {
+    margin-bottom: 12px;
+}
+
+/* Baris teks + tombol (Beranda: kontak singkat, Tentang: penutup) */
+.contact-short {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+}
+
+.contact-short h2 {
+    margin-bottom: 6px;
+}
+
+.contact-short p {
+    margin: 0;
+}
+
+.contact-short .btn {
+    flex-shrink: 0;
+}
+
+/* 13. Daftar kamar ----------------------------------------- */
+.filter-bar {
+    display: flex;
+    align-items: flex-end;
+    flex-wrap: wrap;
+    gap: 12px 16px;
+    margin-bottom: 24px;
+    padding-bottom: 24px;
+    border-bottom: 1px solid var(--border);
+}
+
+.filter-field {
+    width: 200px;
+}
+
+.filter-field--cari {
+    width: 300px;
+}
+
+.filter-info {
+    margin: 0 0 0 auto;
+    padding-bottom: 10px;
+    font-size: 13px;
+    color: var(--muted);
+}
+
+/* 14. Detail kamar ----------------------------------------- */
+.detail-kamar {
+    display: grid;
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+    gap: 40px;
+    align-items: start;
+}
+
+.galeri-thumb {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.galeri-thumb__item {
+    display: block;
+    aspect-ratio: 4 / 3;
+    background: var(--soft-gray);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-btn);
+    overflow: hidden;
+}
+
+.galeri-thumb__item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.galeri-thumb__item:hover {
+    border-color: #9CA3AF;
+}
+
+.galeri-thumb__item.is-active {
+    border-color: var(--primary);
+    outline: 1px solid var(--primary);
+}
+
+.detail-kamar__info {
+    padding-top: 2px;
+}
+
+.detail-kamar__head {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px 14px;
+    margin-bottom: 4px;
+}
+
+.detail-kamar__head h1 {
+    margin: 0;
+    font-size: 30px;
+}
+
+.detail-kamar__harga {
+    margin-bottom: 16px;
+    font-size: 20px;
+    font-weight: 500;
+    color: var(--heading);
+}
+
+.detail-kamar__harga span {
+    font-size: 14px;
+    font-weight: 400;
+    color: var(--muted);
+}
+
+.detail-label {
+    margin: 4px 0 10px;
+    font-family: var(--font-heading);
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--heading);
+}
+
+.list-fasilitas {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px 16px;
+    margin-bottom: 24px;
+}
+
+.list-fasilitas li {
+    position: relative;
+    padding-left: 16px;
+}
+
+.list-fasilitas li::before {
+    content: "";
+    position: absolute;
+    top: 0.7em;
+    left: 0;
+    width: 6px;
+    height: 6px;
+    background: var(--primary);
+    border-radius: 1px;
+}
+
+.detail-kamar__aksi {
+    padding-top: 20px;
+    border-top: 1px solid var(--border);
+}
+
+.detail-kamar__aksi .btn {
+    min-width: 180px;
+}
+
+.detail-blok {
+    margin-top: 48px;
+    padding-top: 40px;
+    border-top: 1px solid var(--border);
+}
+
+.contact-box {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    margin-top: 32px;
+    padding: 22px 24px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-card);
+}
+
+.contact-box p {
+    max-width: 620px;
+    margin: 0;
+    color: var(--heading);
+}
+
+.contact-box .btn {
+    flex-shrink: 0;
+}
+
+.detail-kembali {
+    margin-top: 28px;
+}
+
+/* 15. Tentang ---------------------------------------------- */
+.split-grid__teks h2 {
+    margin-bottom: 14px;
+}
+
+.split-grid__teks p {
+    max-width: 500px;
+}
+
+.info-umum {
+    max-width: 760px;
+}
+
+.info-umum .info-tabel {
+    margin-top: 18px;
+}
+
+/* 16. Kontak ----------------------------------------------- */
+.kontak-aksi {
+    margin-top: 20px;
+}
+
+.kontak-aksi .btn {
+    min-width: 220px;
+}
+
+.peta {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 16px;
+    aspect-ratio: 4 / 3;
+    background: var(--soft-gray);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-card);
+    overflow: hidden;
+}
+
+.peta iframe {
+    display: block;
+    width: 100%;
+    height: 100%;
+    border: 0;
+}
+
+.peta__kosong {
+    max-width: 320px;
+    margin: 0;
+    padding: 24px;
+    text-align: center;
+    color: var(--muted);
+}
+
+.peta__link {
+    margin-top: 12px;
+}
+
+/* 17. Login ------------------------------------------------ */
+.auth-section {
+    background: var(--bg-secondary);
+}
+
+.auth-box {
+    max-width: 420px;
+    margin: 0 auto;
+    padding: 32px 28px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-card);
+}
+
+.auth-box h1 {
+    margin-bottom: 4px;
+    font-size: 26px;
+}
+
+.auth-box__sub {
+    margin-bottom: 24px;
+    color: var(--muted);
+}
+
+.auth-form .btn {
+    margin-top: 24px;
+}
+
+.auth-box__catatan {
+    margin-top: 14px;
+    text-align: center;
+}
+
+.auth-info {
+    max-width: 420px;
+    margin: 20px auto 0;
+    font-size: 13.5px;
+    text-align: center;
+    color: var(--muted);
+}
+
+
+/* ==========================================================
+   RESPONSIVE
+   ========================================================== */
+
+/* 18. Tablet: 768px - 1023px ------------------------------- */
+@media (max-width: 1023px) {
+    :root {
+        --section-space: 52px;
+    }
+
+    .nav-links a {
+        padding: 8px 10px;
+    }
+
+    .grid-kamar {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 20px;
+    }
+
+    .hero-grid,
+    .split-grid {
+        gap: 32px;
+    }
+
+    .hero h1 {
+        font-size: 30px;
+    }
+
+    .detail-kamar {
+        gap: 28px;
+    }
+}
+
+/* 19. Mobile: di bawah 768px ------------------------------- */
+@media (max-width: 767px) {
+    :root {
+        --gutter: 16px;
+        --navbar-height: 62px;
+        --section-space: 44px;
+    }
+
+    /* Global */
+    body {
+        font-size: 14.5px;
+    }
+
+    h1 {
+        font-size: 26px;
+    }
+
+    h2 {
+        font-size: 21px;
+    }
+
+    .section--tight {
+        padding-top: 28px;
+    }
+
+    .section-head {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .hero-grid,
+    .split-grid {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 28px;
+    }
+
+    .grid-kamar {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    /* Navbar: menu lipat */
+    .nav-toggle {
+        display: flex;
+    }
+
+    .nav-menu {
+        display: none;
+        position: absolute;
+        top: var(--navbar-height);
+        left: 0;
+        right: 0;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+        max-height: calc(100vh - var(--navbar-height));
+        overflow-y: auto;
+        padding: 12px var(--gutter) 20px;
+        background: var(--bg);
+        border-bottom: 1px solid var(--border);
+    }
+
+    .nav-menu.is-open {
+        display: flex;
+    }
+
+    .nav-links {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 2px;
+        margin: 0;
+    }
+
+    .nav-links a {
+        padding: 10px 12px;
+    }
+
+    .nav-links a.is-active {
+        background: var(--soft-gray);
+    }
+
+    .nav-login {
+        width: 100%;
+    }
+
+    /* Footer */
+    .footer-grid {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 24px;
+        padding-top: 32px;
+    }
+
+    .footer-nav li + li {
+        margin-top: 2px;
+    }
+
+    .footer-nav a {
+        display: inline-block;
+        padding: 6px 0;
+    }
+
+    /* Komponen */
+    .page-header {
+        padding: 28px 0;
+    }
+
+    .info-tabel > div {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 2px;
+        padding: 12px 16px;
+    }
+
+    /* Tombol utama selebar layar agar mudah ditekan */
+    .contact-short .btn,
+    .detail-kamar__aksi .btn,
+    .contact-box .btn,
+    .kontak-aksi .btn {
+        width: 100%;
+    }
+
+    /* Beranda */
+    .hero {
+        padding: 36px 0 40px;
+    }
+
+    .hero h1 {
+        font-size: 27px;
+    }
+
+    .hero-text p:not(.eyebrow) {
+        font-size: 15px;
+    }
+
+    .contact-short {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 18px;
+    }
+
+    /* Daftar kamar */
+    .filter-bar {
+        gap: 12px;
+        margin-bottom: 20px;
+        padding-bottom: 20px;
+    }
+
+    .filter-field,
+    .filter-field--cari {
+        width: 100%;
+    }
+
+    .filter-info {
+        margin: 0;
+        padding: 0;
+    }
+
+    /* Detail kamar */
+    .detail-kamar {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .detail-kamar__head h1 {
+        font-size: 25px;
+    }
+
+    .galeri-thumb {
+        gap: 8px;
+    }
+
+    .list-fasilitas {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .detail-blok {
+        margin-top: 36px;
+        padding-top: 32px;
+    }
+
+    .contact-box {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 16px;
+        padding: 20px;
+    }
+
+    /* Login */
+    .auth-box {
+        padding: 24px 20px;
+    }
+}
