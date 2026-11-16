@@ -68,6 +68,48 @@ function link_hubungi_pemilik(string $pesan = ''): array
     ];
 }
 
+/** Nama bulan bahasa Indonesia (1-12), atau string kosong. */
+function nama_bulan(int $nomor): string
+{
+    $bulan = [1 => 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli',
+              'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+    return $bulan[$nomor] ?? '';
+}
+
+/** Periode "2026-11" -> "November 2026". */
+function format_periode(string $periode): string
+{
+    [$tahun, $nomorBulan] = array_map('intval', explode('-', $periode) + [0, 0]);
+    $bulan = nama_bulan($nomorBulan);
+
+    return $bulan !== '' ? $bulan . ' ' . $tahun : $periode;
+}
+
+/** Tanggal "2026-03-01" -> "1 Maret 2026". Mengembalikan "-" jika kosong/tidak valid. */
+function format_tanggal(?string $tanggal): string
+{
+    if (!$tanggal || !preg_match('/^(\d{4})-(\d{2})-(\d{2})$/', $tanggal, $m) || !checkdate((int) $m[2], (int) $m[3], (int) $m[1])) {
+        return '-';
+    }
+    return (int) $m[3] . ' ' . nama_bulan((int) $m[2]) . ' ' . $m[1];
+}
+
+/** Label status penghuni. */
+function label_status_penghuni(string $status): string
+{
+    return $status === 'aktif' ? 'Aktif' : 'Tidak Aktif';
+}
+
+/** Label status tagihan untuk ditampilkan. */
+function label_status_tagihan(string $status): string
+{
+    return match ($status) {
+        'lunas'    => 'Lunas',
+        'menunggu' => 'Menunggu Verifikasi',
+        default    => 'Belum Lunas',
+    };
+}
+
 /** Label status kamar untuk ditampilkan. */
 function label_status(string $status): string
 {

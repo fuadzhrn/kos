@@ -1,0 +1,855 @@
+/* ==========================================================
+   KOS ARON - Stylesheet admin
+   ----------------------------------------------------------
+   Dimuat SETELAH style.css (memakai variabel, tombol, badge,
+   link-more, dan tipografi yang sama dengan website publik).
+     1. Variabel tambahan
+     2. Layout (sidebar + konten)
+     3. Sidebar
+     4. Topbar & menu user
+     5. Kepala halaman & kartu statistik
+     6. Panel, tabel, informasi kamar
+     6b. Halaman data: toolbar filter, tabel lebar, tombol aksi
+     6c. Form tambah/edit
+     7. Status tagihan
+     8. Responsive
+   ========================================================== */
+
+/* 1. Variabel tambahan ------------------------------------- */
+.admin-body {
+    --warning: #B45309;
+    --danger: #B91C1C;
+    --sidebar-width: 240px;
+    --topbar-height: 64px;
+    background: var(--bg-secondary);
+}
+
+body.sidebar-open {
+    overflow: hidden;
+}
+
+/* 2. Layout ------------------------------------------------ */
+.admin-layout {
+    display: flex;
+    min-height: 100vh;
+}
+
+.admin-main {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-width: 0;
+}
+
+.admin-content {
+    flex: 1;
+    width: 100%;
+    max-width: 1240px;
+    padding: 28px 28px 32px;
+}
+
+/* 3. Sidebar ----------------------------------------------- */
+.sidebar {
+    position: sticky;
+    top: 0;
+    flex: 0 0 var(--sidebar-width);
+    width: var(--sidebar-width);
+    height: 100vh;
+    overflow-y: auto;
+    background: var(--bg);
+    border-right: 1px solid var(--border);
+}
+
+.sidebar__brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    height: var(--topbar-height);
+    padding: 0 20px;
+    border-bottom: 1px solid var(--border);
+}
+
+.sidebar__brand a {
+    font-family: var(--font-heading);
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    color: var(--heading);
+}
+
+.sidebar__brand span {
+    padding: 1px 8px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--muted);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+}
+
+.sidebar__nav {
+    padding: 16px 12px;
+}
+
+.sidebar__nav li + li {
+    margin-top: 2px;
+}
+
+.sidebar__nav a {
+    display: block;
+    padding: 10px 12px;
+    font-size: 14.5px;
+    font-weight: 500;
+    color: var(--text);
+    border-radius: var(--radius-btn);
+}
+
+.sidebar__nav a:hover {
+    color: var(--heading);
+    background: var(--soft-gray);
+}
+
+.sidebar__nav a.is-active {
+    color: var(--primary);
+    background: var(--soft-gray);
+    box-shadow: inset 3px 0 0 var(--primary);
+}
+
+.sidebar-backdrop {
+    display: none;
+}
+
+/* 4. Topbar & menu user ------------------------------------ */
+.topbar {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    height: var(--topbar-height);
+    padding: 0 28px;
+    background: var(--bg);
+    border-bottom: 1px solid var(--border);
+}
+
+.topbar__toggle {
+    display: none;
+    flex-direction: column;
+    justify-content: center;
+    gap: 5px;
+    flex-shrink: 0;
+    width: 42px;
+    height: 42px;
+    padding: 0 10px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-btn);
+    cursor: pointer;
+}
+
+.topbar__toggle span {
+    display: block;
+    height: 2px;
+    background: var(--heading);
+    border-radius: 2px;
+}
+
+.topbar__title {
+    margin: 0;
+    overflow: hidden;
+    font-family: var(--font-heading);
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--heading);
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.topbar__user {
+    position: relative;
+    margin-left: auto;
+    flex-shrink: 0;
+}
+
+.topbar__user summary {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 42px;
+    padding: 4px 8px;
+    list-style: none;
+    border-radius: var(--radius-btn);
+    cursor: pointer;
+}
+
+.topbar__user summary::-webkit-details-marker {
+    display: none;
+}
+
+.topbar__user summary::after {
+    content: "";
+    width: 7px;
+    height: 7px;
+    margin: -4px 2px 0 2px;
+    border-right: 1.5px solid var(--muted);
+    border-bottom: 1.5px solid var(--muted);
+    transform: rotate(45deg);
+}
+
+.topbar__user summary:hover,
+.topbar__user[open] summary {
+    background: var(--soft-gray);
+}
+
+.topbar__avatar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    font-family: var(--font-heading);
+    font-size: 14px;
+    font-weight: 600;
+    color: #fff;
+    background: var(--primary);
+    border-radius: 50%;
+}
+
+.topbar__nama {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--heading);
+}
+
+.topbar__menu {
+    position: absolute;
+    top: calc(100% + 6px);
+    right: 0;
+    z-index: 60;
+    min-width: 180px;
+    padding: 6px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-card);
+}
+
+.topbar__menu a {
+    display: block;
+    padding: 9px 12px;
+    font-size: 14px;
+    color: var(--text);
+    border-radius: 4px;
+}
+
+.topbar__menu a:hover {
+    color: var(--heading);
+    background: var(--soft-gray);
+}
+
+/* 5. Kepala halaman & kartu statistik ---------------------- */
+.admin-page-head {
+    margin-bottom: 24px;
+}
+
+.admin-page-head h1 {
+    margin-bottom: 4px;
+    font-size: 26px;
+}
+
+.admin-page-head p {
+    margin: 0;
+    color: var(--muted);
+}
+
+.stat-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.stat-card {
+    padding: 18px 20px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-card);
+}
+
+.stat-card__label {
+    margin: 0 0 6px;
+    font-size: 13.5px;
+    font-weight: 500;
+    color: var(--text);
+}
+
+.stat-card__nilai {
+    margin: 0;
+    font-family: var(--font-heading);
+    font-size: 30px;
+    font-weight: 700;
+    line-height: 1.2;
+    color: var(--heading);
+}
+
+.stat-card__ket {
+    margin: 6px 0 0;
+    font-size: 12.5px;
+    color: var(--muted);
+}
+
+/* 6. Panel, tabel, informasi kamar ------------------------- */
+.panel {
+    margin-bottom: 24px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-card);
+    overflow: hidden;
+}
+
+.panel__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px 16px;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+}
+
+.panel__head h2 {
+    margin: 0;
+    font-size: 17px;
+}
+
+.panel__head .link-more {
+    font-size: 13.5px;
+}
+
+.panel__kosong {
+    margin: 0;
+    padding: 4px 0;
+    color: var(--muted);
+}
+
+.panel > .panel__kosong {
+    padding: 20px;
+}
+
+/* Cadangan: jika isi tabel terlalu lebar, tabel digeser di dalam panel,
+   bukan membuat seluruh halaman melebar. */
+.tabel-wrap {
+    overflow-x: auto;
+}
+
+.tabel {
+    width: 100%;
+    font-size: 14px;
+    border-collapse: collapse;
+}
+
+.tabel th {
+    padding: 11px 20px;
+    font-size: 12.5px;
+    font-weight: 500;
+    text-align: left;
+    white-space: nowrap;
+    color: var(--muted);
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border);
+}
+
+.tabel td {
+    padding: 12px 20px;
+    color: var(--heading);
+    border-bottom: 1px solid var(--border);
+}
+
+/* Kolom selain nama tidak dipatah ke baris baru */
+.tabel td:not(:first-child) {
+    white-space: nowrap;
+}
+
+.tabel tbody tr:last-child td {
+    border-bottom: 0;
+}
+
+.tabel .tabel__angka {
+    text-align: right;
+    white-space: nowrap;
+}
+
+.info-kamar {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+}
+
+.info-kamar__kolom {
+    padding: 16px 20px 18px;
+}
+
+.info-kamar__kolom + .info-kamar__kolom {
+    border-left: 1px solid var(--border);
+}
+
+.info-kamar h3 {
+    margin: 0 0 8px;
+    font-size: 15px;
+}
+
+.info-kamar h3 span {
+    font-weight: 400;
+    color: var(--muted);
+}
+
+.info-kamar__list li {
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 2px 12px;
+    padding: 9px 0;
+    font-size: 14px;
+    color: var(--heading);
+    border-bottom: 1px solid var(--border);
+}
+
+.info-kamar__list li:last-child {
+    border-bottom: 0;
+}
+
+.admin-placeholder {
+    padding: 32px 24px;
+    text-align: center;
+    color: var(--muted);
+    background: var(--bg);
+    border: 1px dashed var(--border-input);
+    border-radius: var(--radius-card);
+}
+
+.admin-placeholder strong {
+    display: block;
+    margin-bottom: 4px;
+    font-family: var(--font-heading);
+    font-weight: 600;
+    color: var(--heading);
+}
+
+.admin-catatan {
+    margin: 8px 0 0;
+    font-size: 12.5px;
+    text-align: center;
+    color: var(--muted);
+}
+
+/* 6b. Halaman data (Data Kamar): toolbar, tabel lebar, aksi -- */
+.admin-page-head--aksi {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 16px;
+}
+
+.admin-content > .notice {
+    margin-bottom: 20px;
+}
+
+.toolbar {
+    display: flex;
+    align-items: flex-end;
+    flex-wrap: wrap;
+    gap: 12px 16px;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+}
+
+.tabel .tabel__no {
+    width: 48px;
+    color: var(--muted);
+}
+
+.tabel__foto {
+    display: block;
+    width: 64px;
+    max-width: none; /* jangan ikut menyusut di sel tabel yang sempit */
+    height: 48px;
+    object-fit: cover;
+    background: var(--soft-gray);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+}
+
+.tabel .tabel__utama {
+    font-weight: 500;
+}
+
+.tabel td.tabel__fasilitas {
+    min-width: 180px;
+    white-space: normal;
+    color: var(--text);
+}
+
+.tabel__sub {
+    display: block;
+    font-size: 12.5px;
+    font-weight: 400;
+    color: var(--muted);
+}
+
+/* Data Penghuni: nama dan tanggal boleh turun baris agar tabel lebih ringkas */
+#tabel-penghuni td.tabel__utama,
+#tabel-penghuni td.tabel__tanggal {
+    white-space: normal;
+}
+
+.tabel__kosong td {
+    padding: 24px 20px;
+    text-align: center;
+    color: var(--muted);
+}
+
+.aksi-grup {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.aksi-grup form {
+    margin: 0;
+}
+
+.btn-sm {
+    min-height: 34px;
+    padding: 6px 14px;
+    font-size: 13px;
+}
+
+/* Hapus: tidak mencolok, baru berwarna merah saat diarahkan */
+.btn-hapus {
+    color: var(--muted);
+    background: var(--bg);
+    border-color: var(--border);
+}
+
+.btn-hapus:hover {
+    color: var(--danger);
+    border-color: #F1B5B5;
+}
+
+/* 6c. Form (Tambah/Edit Kamar) ------------------------------ */
+.notice--peringatan {
+    border-left-color: var(--warning);
+}
+
+.form-panel {
+    max-width: 760px;
+    padding: 24px;
+}
+
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 18px 20px;
+}
+
+.form-grid--2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.form-grid .form-group + .form-group {
+    margin-top: 0;
+}
+
+.form-info {
+    margin: 20px 0 0;
+    padding: 12px 14px;
+    font-size: 13px;
+    color: var(--text);
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-btn);
+}
+
+.notice--galat {
+    border-left-color: var(--danger);
+}
+
+.notice--galat ul {
+    margin: 6px 0 0;
+    padding-left: 18px;
+    list-style: disc;
+}
+
+/* Tabel label-nilai di dalam panel: tanpa bingkai ganda */
+.info-tabel--panel {
+    margin: 0;
+    border: 0;
+    border-radius: 0;
+}
+
+.form-grid__penuh {
+    grid-column: 1 / -1;
+}
+
+textarea.form-control {
+    height: auto;
+    min-height: 88px;
+    padding-top: 10px;
+    line-height: 1.5;
+    resize: vertical;
+}
+
+input[type="file"].form-control {
+    height: auto;
+    padding: 8px;
+    cursor: pointer;
+}
+
+.foto-sekarang {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 10px;
+}
+
+.foto-sekarang img {
+    flex-shrink: 0;
+    width: 96px;
+    height: 72px;
+    object-fit: cover;
+    background: var(--soft-gray);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+}
+
+.foto-sekarang .teks-catatan {
+    margin: 0;
+}
+
+.form-aksi {
+    display: flex;
+    gap: 12px;
+    margin-top: 24px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border);
+}
+
+.admin-placeholder p {
+    margin: 0 0 16px;
+}
+
+/* 7. Status tagihan (memakai komponen .badge dari style.css) */
+.badge--lunas {
+    color: var(--success);
+}
+
+.badge--menunggu {
+    color: var(--warning);
+}
+
+.badge--belum_lunas {
+    color: var(--danger);
+}
+
+/* Status penghuni */
+.badge--aktif {
+    color: var(--success);
+}
+
+.badge--tidak_aktif {
+    color: var(--muted);
+}
+
+/* 8. Responsive -------------------------------------------- */
+
+/* Area konten sempit (sidebar masih tampil di 1024-1279px): rapatkan kolom tabel */
+@media (max-width: 1279px) {
+    .tabel th,
+    .tabel td {
+        padding-right: 14px;
+        padding-left: 14px;
+    }
+
+    .tabel th:first-child,
+    .tabel td:first-child {
+        padding-left: 20px;
+    }
+
+    /* Tabel data yang bisa digeser: kolom Aksi tetap terlihat di kanan */
+    .tabel--lebar th:last-child,
+    .tabel--lebar tr[data-status] td:last-child {
+        position: sticky;
+        right: 0;
+        z-index: 1;
+        background: var(--bg);
+        box-shadow: inset 1px 0 0 var(--border);
+    }
+
+    .tabel--lebar th:last-child {
+        background: var(--bg-secondary);
+    }
+}
+
+/* Tablet & mobile: sidebar menjadi menu yang dibuka lewat tombol */
+@media (max-width: 1023px) {
+    .sidebar {
+        position: fixed;
+        top: 0;
+        bottom: 0;
+        left: 0;
+        z-index: 200;
+        display: none;
+        height: auto;
+    }
+
+    .sidebar.is-open {
+        display: block;
+    }
+
+    .sidebar-backdrop {
+        position: fixed;
+        inset: 0;
+        z-index: 150;
+        display: block;
+        background: rgba(17, 24, 39, 0.4);
+    }
+
+    .topbar__toggle {
+        display: flex;
+    }
+
+    .topbar {
+        padding: 0 20px;
+    }
+
+    .admin-content {
+        padding: 24px 20px 28px;
+    }
+
+    .stat-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 767px) {
+    .topbar {
+        padding: 0 16px;
+    }
+
+    .admin-content {
+        padding: 20px 16px 24px;
+    }
+
+    .admin-page-head h1 {
+        font-size: 22px;
+    }
+
+    .stat-grid {
+        gap: 12px;
+    }
+
+    .stat-card {
+        padding: 16px;
+    }
+
+    .stat-card__nilai {
+        font-size: 26px;
+    }
+
+    .panel__head {
+        padding: 14px 16px;
+    }
+
+    /* .tabel--tumpuk (dashboard): baris menjadi daftar bertumpuk.
+       Tabel lain (mis. Data Kamar) tetap tabel dan digeser di dalam .tabel-wrap. */
+    .tabel--tumpuk thead {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+    }
+
+    .tabel--tumpuk,
+    .tabel--tumpuk tbody,
+    .tabel--tumpuk tr,
+    .tabel--tumpuk td {
+        display: block;
+        width: 100%;
+    }
+
+    .tabel--tumpuk tr {
+        padding: 10px 16px;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .tabel--tumpuk tbody tr:last-child {
+        border-bottom: 0;
+    }
+
+    .tabel--tumpuk td,
+    .tabel--tumpuk td:first-child,
+    .tabel--tumpuk .tabel__angka {
+        display: flex;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 4px 0;
+        text-align: right;
+        white-space: normal;
+        border-bottom: 0;
+    }
+
+    .tabel--tumpuk td::before {
+        content: attr(data-label);
+        font-size: 13px;
+        text-align: left;
+        color: var(--muted);
+    }
+
+    /* .tabel--lebar (Data Kamar): tetap tabel, digeser di dalam panel */
+    .tabel--lebar {
+        min-width: 760px;
+    }
+
+    .admin-page-head--aksi {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .toolbar {
+        padding: 14px 16px;
+    }
+
+    .form-panel {
+        padding: 18px 16px;
+    }
+
+    .form-grid {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .form-aksi .btn {
+        flex: 1 1 0;
+    }
+
+    .info-kamar {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .info-kamar__kolom {
+        padding: 14px 16px 16px;
+    }
+
+    .info-kamar__kolom + .info-kamar__kolom {
+        border-top: 1px solid var(--border);
+        border-left: 0;
+    }
+}
+
+@media (max-width: 479px) {
+    .stat-grid {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .topbar__nama {
+        display: none;
+    }
+}

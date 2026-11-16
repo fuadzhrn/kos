@@ -113,3 +113,19 @@ function get_kamar_tersedia(int $batas): array
     $tersedia = array_filter(data_kamar(), fn ($k) => $k['status'] === 'kosong');
     return array_slice(array_values($tersedia), 0, $batas);
 }
+
+/**
+ * Jumlah kamar per status.
+ * Nanti setara dengan: SELECT status, COUNT(*) FROM kamar GROUP BY status
+ *
+ * @return array{total: int, kosong: int, terisi: int}
+ */
+function hitung_kamar_per_status(): array
+{
+    $hasil = ['total' => 0, 'kosong' => 0, 'terisi' => 0];
+    foreach (data_kamar() as $kamar) {
+        $hasil['total']++;
+        $hasil[$kamar['status']]++;
+    }
+    return $hasil;
+}
