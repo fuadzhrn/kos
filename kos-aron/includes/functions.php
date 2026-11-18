@@ -56,14 +56,18 @@ function daftar_foto_kamar(array $kamar): array
  * Tujuan tombol "Hubungi Pemilik": WhatsApp jika nomor sudah diatur,
  * jika belum diarahkan ke halaman Kontak.
  *
+ * @param string $fallbackUrl Tujuan jika WhatsApp belum diatur. Defaultnya
+ *                             cocok untuk halaman di root (mis. index.php);
+ *                             halaman di dalam subfolder (mis. admin/, penghuni/)
+ *                             perlu mengirim path relatif sendiri, contoh '../kontak.php'.
  * @return array{url: string, eksternal: bool}
  */
-function link_hubungi_pemilik(string $pesan = ''): array
+function link_hubungi_pemilik(string $pesan = '', string $fallbackUrl = 'kontak.php'): array
 {
     $urlWhatsapp = url_whatsapp($pesan);
 
     return [
-        'url'       => $urlWhatsapp ?? 'kontak.php',
+        'url'       => $urlWhatsapp ?? $fallbackUrl,
         'eksternal' => $urlWhatsapp !== null,
     ];
 }

@@ -409,6 +409,55 @@
         }
     }
 
+    /* ------------------------------------------------------
+       Tampilkan / sembunyikan password. Sama seperti assets/js/main.js
+       (dipakai login.php), diduplikasi di sini supaya halaman di dalam
+       admin/ dan penghuni/ (yang memuat admin.js, bukan main.js) juga
+       bisa memakai <div class="input-password"> + [data-toggle-password].
+       ------------------------------------------------------ */
+    function initTogglePassword() {
+        var tombol = document.querySelectorAll('[data-toggle-password]');
+
+        Array.prototype.forEach.call(tombol, function (btn) {
+            var input = document.getElementById(btn.getAttribute('aria-controls'));
+            if (!input) return;
+
+            btn.addEventListener('click', function () {
+                var tampil = input.type === 'password';
+                input.type = tampil ? 'text' : 'password';
+                btn.textContent = tampil ? 'Sembunyikan' : 'Tampilkan';
+                input.focus();
+            });
+        });
+    }
+
+    /* ------------------------------------------------------
+       Form Ubah Password (penghuni/profil.php): peringatan langsung
+       di browser jika Password Baru dan Konfirmasi tidak sama.
+       Server tetap memeriksa aturan yang sama.
+       ------------------------------------------------------ */
+    function initFormPassword() {
+        var form = document.querySelector('[data-form-password]');
+        if (!form) return;
+
+        var baru = form.elements.password_baru;
+        var konfirmasi = form.elements.konfirmasi_password;
+        var peringatan = form.querySelector('[data-peringatan-konfirmasi]');
+
+        function cek() {
+            var pesan = '';
+            if (konfirmasi.value !== '' && baru.value !== konfirmasi.value) {
+                pesan = 'Konfirmasi password baru tidak sama dengan password baru.';
+            }
+            konfirmasi.setCustomValidity(pesan);
+            peringatan.textContent = pesan;
+            peringatan.hidden = pesan === '';
+        }
+
+        baru.addEventListener('input', cek);
+        konfirmasi.addEventListener('input', cek);
+    }
+
     document.addEventListener('DOMContentLoaded', function () {
         initSidebar();
         initMenuUser();
@@ -419,5 +468,7 @@
         initModalTagihan();
         initModalPembayaran();
         initModalDetailPembayaran();
+        initTogglePassword();
+        initFormPassword();
     });
 })();

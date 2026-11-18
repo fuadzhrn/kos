@@ -734,6 +734,10 @@ select.form-control {
     border-left-color: #9CA3AF;
 }
 
+.notice--berhasil {
+    border-left-color: var(--success);
+}
+
 .empty-state {
     padding: 28px 24px;
     text-align: center;
