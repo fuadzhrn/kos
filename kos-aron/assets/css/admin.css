@@ -11,6 +11,7 @@
      6. Panel, tabel, informasi kamar
      6b. Halaman data: toolbar filter, tabel lebar, tombol aksi
      6c. Form tambah/edit
+     6d. Modal
      7. Status tagihan
      8. Responsive
    ========================================================== */
@@ -295,6 +296,25 @@ body.sidebar-open {
     margin: 6px 0 0;
     font-size: 12.5px;
     color: var(--muted);
+}
+
+/* Ringkasan bulan ini (Data Pembayaran): memakai .stat-card yang sama,
+   tetapi tidak selebar grid 4 kolom -- cukup sebanyak kartu yang ada. */
+.ringkasan-bulan {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.ringkasan-bulan .stat-card {
+    flex: 1 1 220px;
+    max-width: 280px;
+}
+
+/* Nilai berupa Rupiah lebih panjang dari angka biasa; perkecil sedikit agar tidak membungkus. */
+.stat-card__nilai--rupiah {
+    font-size: 22px;
 }
 
 /* 6. Panel, tabel, informasi kamar ------------------------- */
@@ -632,8 +652,142 @@ input[type="file"].form-control {
     border-top: 1px solid var(--border);
 }
 
+/* Pilihan Tunai / Transfer (fieldset.form-group > .radio-group) */
+.radio-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 20px;
+    min-height: 42px;
+    align-items: center;
+}
+
+.radio-opsi {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 14px;
+    color: var(--heading);
+    cursor: pointer;
+}
+
+.radio-opsi input {
+    width: 16px;
+    height: 16px;
+    accent-color: var(--primary);
+    cursor: pointer;
+}
+
 .admin-placeholder p {
     margin: 0 0 16px;
+}
+
+/* 6d. Modal (form Buat/Edit Tagihan) ---------------------- */
+/* .modal (<dialog>) selalu jadi kolom flex: .modal__head dan .modal__foot
+   tetap di tempat, .modal__body yang bisa digulir jika isinya panjang.
+   Berlaku untuk dialog berbentuk form (Buat/Edit Tagihan, Catat Pembayaran)
+   maupun yang tanpa form (Detail Pembayaran, head/body/foot langsung di
+   dalam <dialog>). .modal__form hanya meneruskan flex ini ke dalam <form>. */
+.modal {
+    width: min(640px, calc(100% - 32px));
+    max-height: calc(100vh - 48px);
+    padding: 0;
+    color: var(--text);
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-card);
+}
+
+/* PENTING: display:flex dipasang hanya untuk .modal[open], BUKAN pada .modal
+   tanpa syarat. <dialog> yang tidak punya atribut open harus tetap mengikuti
+   default browser (display: none) -- author stylesheet (aturan CSS kita)
+   selalu menang atas default browser, jadi .modal { display:flex } tanpa
+   syarat akan membuat dialog yang seharusnya tertutup tetap tampil terus. */
+.modal[open] {
+    display: flex;
+    flex-direction: column;
+}
+
+/* Modal tampilan saja (mis. Detail Pembayaran, tanpa form) -- cukup sempit */
+.modal--detail {
+    width: min(460px, calc(100% - 32px));
+}
+
+.modal::backdrop {
+    background: rgba(17, 24, 39, 0.45);
+}
+
+/* Tanpa JavaScript, dialog tampil di halaman (bukan modal) */
+.modal[open]:not(:modal) {
+    position: static;
+    margin: 24px 0;
+}
+
+.modal__form {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+}
+
+.modal__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 14px 16px 14px 20px;
+    border-bottom: 1px solid var(--border);
+}
+
+.modal__head h2 {
+    margin: 0;
+    font-size: 18px;
+}
+
+.modal__tutup {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    font-size: 24px;
+    line-height: 1;
+    color: var(--muted);
+    border-radius: var(--radius-btn);
+}
+
+.modal__tutup:hover {
+    color: var(--heading);
+    background: var(--soft-gray);
+}
+
+.modal__body {
+    padding: 18px 20px 20px;
+    overflow-y: auto;
+    min-height: 0;
+}
+
+.modal__body > .notice {
+    margin-bottom: 14px;
+}
+
+.modal__info {
+    margin: 0 0 16px;
+}
+
+.modal__foot {
+    display: flex;
+    gap: 12px;
+    padding: 14px 20px;
+    border-top: 1px solid var(--border);
+}
+
+.teks-galat {
+    color: var(--danger);
+}
+
+input[readonly].form-control {
+    color: var(--muted);
+    background-color: var(--bg-secondary);
 }
 
 /* 7. Status tagihan (memakai komponen .badge dari style.css) */
@@ -641,11 +795,11 @@ input[type="file"].form-control {
     color: var(--success);
 }
 
-.badge--menunggu {
+.badge--belum_bayar {
     color: var(--warning);
 }
 
-.badge--belum_lunas {
+.badge--terlambat {
     color: var(--danger);
 }
 
@@ -675,7 +829,7 @@ input[type="file"].form-control {
 
     /* Tabel data yang bisa digeser: kolom Aksi tetap terlihat di kanan */
     .tabel--lebar th:last-child,
-    .tabel--lebar tr[data-status] td:last-child {
+    .tabel--lebar tr[data-baris] td:last-child {
         position: sticky;
         right: 0;
         z-index: 1;
@@ -826,8 +980,22 @@ input[type="file"].form-control {
         grid-template-columns: minmax(0, 1fr);
     }
 
-    .form-aksi .btn {
+    .form-aksi .btn,
+    .modal__foot .btn {
         flex: 1 1 0;
+    }
+
+    .modal {
+        width: calc(100% - 24px);
+        max-height: calc(100vh - 24px);
+    }
+
+    .modal__body {
+        padding: 16px;
+    }
+
+    .modal__foot {
+        padding: 12px 16px;
     }
 
     .info-kamar {

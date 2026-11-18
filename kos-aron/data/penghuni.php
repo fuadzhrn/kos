@@ -75,6 +75,27 @@ function get_penghuni_by_kamar(int $kamarId): ?array
 }
 
 /**
+ * Penghuni yang sedang "login" di sisi Penghuni.
+ * BELUM ada sistem login sungguhan -- untuk sementara selalu mengembalikan
+ * satu penghuni CONTOH. Dipilih id 2 (Siti Aminah) karena datanya mencakup
+ * riwayat pembayaran DAN tagihan yang belum lunas, sehingga semua bagian
+ * Dashboard Penghuni (info, status tagihan, riwayat, notifikasi) punya isi
+ * untuk ditampilkan. Jika penghuni id 2 tidak ditemukan atau sudah tidak
+ * aktif, jatuh kembali ke penghuni aktif pertama.
+ * Nanti diganti penghuni dari $_SESSION setelah fitur login dibuat.
+ */
+function get_penghuni_login(): ?array
+{
+    $dipilih = get_penghuni_by_id(2);
+    if ($dipilih !== null && $dipilih['status'] === 'aktif') {
+        return $dipilih;
+    }
+
+    $aktif = array_values(array_filter(get_semua_penghuni(), fn ($p) => $p['status'] === 'aktif'));
+    return $aktif[0] ?? null;
+}
+
+/**
  * Apakah kamar sudah ditempati penghuni aktif lain (atau berstatus 'terisi')?
  * Dipakai untuk aturan "satu kamar = satu penyewaan aktif".
  *

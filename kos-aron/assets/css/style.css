@@ -296,12 +296,26 @@ h3 {
 }
 
 .form-group label,
-.filter-field label {
+.filter-field label,
+.form-group legend {
     display: block;
     margin-bottom: 6px;
     font-size: 13px;
     font-weight: 500;
     color: var(--heading);
+}
+
+/* <fieldset class="form-group"> untuk mengelompokkan beberapa radio/checkbox
+   (mis. pilihan metode pembayaran) -- reset tampilan bawaan fieldset. */
+fieldset.form-group {
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+}
+
+fieldset.form-group legend {
+    padding: 0;
 }
 
 .form-control {

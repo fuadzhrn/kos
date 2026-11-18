@@ -42,8 +42,8 @@ require __DIR__ . '/includes/header.php';
         <p class="stat-card__nilai"><?= $belumLunas['jumlah'] ?></p>
         <p class="stat-card__ket">
             Total <?= e(format_rupiah($belumLunas['total'])) ?>
-            <?php if ($belumLunas['menunggu'] > 0): ?>
-                &middot; <?= $belumLunas['menunggu'] ?> menunggu verifikasi
+            <?php if ($belumLunas['terlambat'] > 0): ?>
+                &middot; <?= $belumLunas['terlambat'] ?> terlambat
             <?php endif; ?>
         </p>
     </div>

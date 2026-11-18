@@ -79,7 +79,7 @@ require __DIR__ . '/includes/header.php';
                         // Kata kunci pencarian, contoh: "kamar 05 kamar 5" (cocok untuk "05", "5", "kamar 5")
                         $kataKunci = strtolower($nama . ' kamar ' . ltrim((string) $kamar['nomor'], '0'));
                         ?>
-                        <tr data-status="<?= e($kamar['status']) ?>" data-cari="<?= e($kataKunci) ?>">
+                        <tr data-baris data-status="<?= e($kamar['status']) ?>" data-cari="<?= e($kataKunci) ?>">
                             <td class="tabel__no"><?= $i + 1 ?></td>
                             <td>
                                 <img class="tabel__foto" src="../<?= e(url_foto($kamar['foto'])) ?>"

@@ -4,6 +4,9 @@
  * File ini di-include paling awal oleh setiap halaman.
  */
 
+// Zona waktu Sumenep (WIB), dipakai untuk tanggal hari ini & status tagihan terlambat.
+date_default_timezone_set('Asia/Jakarta');
+
 const SITE_NAME     = 'Kos Aron';
 const SITE_LOCATION = 'Kolor, Sumenep';
 const SITE_LOCATION_FULL = SITE_LOCATION . ', Jawa Timur';

@@ -75,7 +75,7 @@ require __DIR__ . '/includes/header.php';
                 <tbody>
                     <?php foreach ($daftarPenghuni as $i => $p): ?>
                         <?php $kamar = get_kamar_by_id($p['kamar_id']); ?>
-                        <tr data-status="<?= e($p['status']) ?>" data-cari="<?= e(mb_strtolower($p['nama'])) ?>">
+                        <tr data-baris data-status="<?= e($p['status']) ?>" data-cari="<?= e(mb_strtolower($p['nama'])) ?>">
                             <td class="tabel__no"><?= $i + 1 ?></td>
                             <td class="tabel__utama">
                                 <?= e($p['nama']) ?>

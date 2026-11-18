@@ -104,10 +104,25 @@ function label_status_penghuni(string $status): string
 function label_status_tagihan(string $status): string
 {
     return match ($status) {
-        'lunas'    => 'Lunas',
-        'menunggu' => 'Menunggu Verifikasi',
-        default    => 'Belum Lunas',
+        'lunas'     => 'Lunas',
+        'terlambat' => 'Terlambat',
+        default     => 'Belum Bayar',
     };
+}
+
+/**
+ * Tanggal hari ini (YYYY-MM-DD), dipakai untuk menentukan tagihan terlambat.
+ * Satu tempat agar mudah diganti saat pengujian.
+ */
+function tanggal_hari_ini(): string
+{
+    return date('Y-m-d');
+}
+
+/** Label metode pembayaran untuk ditampilkan. */
+function label_metode_pembayaran(string $metode): string
+{
+    return $metode === 'transfer' ? 'Transfer' : 'Tunai';
 }
 
 /** Label status kamar untuk ditampilkan. */
