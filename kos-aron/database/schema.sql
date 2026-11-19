@@ -64,6 +64,15 @@ CREATE TABLE users (
 -- ------------------------------------------------------------
 -- 2. kamar
 -- ------------------------------------------------------------
+-- PERUBAHAN (tahap backend Data Kamar, didokumentasikan di
+-- docs/02-rancangan-database.md §2.13): kolom `status` (kosong/terisi)
+-- DIHAPUS -- nilai itu sekarang SELALU dihitung dari ada/tidaknya baris
+-- `penyewaan` berstatus 'aktif' untuk kamar ini (lihat data/kamar.php),
+-- tidak lagi disimpan sebagai kolom yang bisa diisi manual lewat form dan
+-- berisiko bertentangan dengan data penyewaan yang sebenarnya. Kolom
+-- `kondisi` (BARU) adalah hal yang BERBEDA: status OPERASIONAL yang
+-- memang diatur manual oleh admin (kamar sedang direnovasi/diperbaiki),
+-- independen dari ketersediaan penyewaan.
 CREATE TABLE kamar (
     id          BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     nomor       VARCHAR(10)     NOT NULL,
@@ -72,12 +81,12 @@ CREATE TABLE kamar (
     fasilitas   JSON            NULL,
     foto_utama  VARCHAR(255)    NULL,
     galeri      JSON            NULL,
-    status      ENUM('kosong', 'terisi') NOT NULL DEFAULT 'kosong',
+    kondisi     ENUM('aktif', 'perawatan') NOT NULL DEFAULT 'aktif',
     created_at  TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at  TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (id),
     UNIQUE KEY uq_kamar_nomor (nomor),
-    KEY idx_kamar_status (status),
+    KEY idx_kamar_kondisi (kondisi),
     CONSTRAINT chk_kamar_harga CHECK (harga >= 0)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
 

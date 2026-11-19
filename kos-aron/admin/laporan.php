@@ -34,7 +34,7 @@ $daftarPembayaranLaporan = array_values(array_filter(
     get_semua_pembayaran(),
     fn ($p) => $periodeUntukData === null || $p['periode_tagihan'] === $periodeUntukData
 ));
-$daftarKamarLaporan = get_semua_kamar();
+$daftarKamarLaporan = get_semua_kamar(true); // admin: laporan mencakup juga kamar berkondisi 'perawatan'
 
 $labelPeriode = $periodeDipilih === 'semua' ? 'Semua Periode' : format_periode($periodeDipilih);
 

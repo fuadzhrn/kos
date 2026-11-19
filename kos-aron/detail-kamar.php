@@ -4,7 +4,7 @@ require_once __DIR__ . '/data/kamar.php';
 
 // Validasi parameter id: harus bilangan bulat positif.
 $id    = filter_input(INPUT_GET, 'id', FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
-$kamar = $id ? get_kamar_by_id($id) : null;
+$kamar = $id ? get_kamar_publik_by_id($id) : null;
 
 if ($kamar === null) {
     http_response_code(404);

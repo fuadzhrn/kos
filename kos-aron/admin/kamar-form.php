@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../includes/config.php';
 require_role('admin', '../login.php');
 require_once __DIR__ . '/../data/kamar.php';
+require_once __DIR__ . '/../includes/upload.php';
 
 $menuAktif = 'kamar';
 
@@ -16,27 +17,92 @@ if ($modeEdit) {
     }
 }
 
-/*
- * Penyimpanan BELUM aktif: data yang dikirim tidak disimpan ke mana pun.
- * Isian dikembalikan ke form agar tidak hilang, disertai pesan yang jelas.
- * Nanti: validasi CSRF & input, upload foto, lalu INSERT / UPDATE ke tabel kamar.
- */
 $metode    = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 $csrfValid = $metode !== 'POST' || csrf_valid($_POST['csrf_token'] ?? null);
-$dikirim   = $metode === 'POST' && $csrfValid;
+$dikirim   = $metode === 'POST' && $csrfValid && !($modeEdit && $kamar === null);
 
 $nilai = [
     'nomor'     => $kamar['nomor'] ?? '',
     'harga'     => isset($kamar['harga']) ? (string) $kamar['harga'] : '',
     'deskripsi' => $kamar['deskripsi'] ?? '',
     'fasilitas' => isset($kamar['fasilitas']) ? implode("\n", $kamar['fasilitas']) : '',
-    'status'    => $kamar['status'] ?? 'kosong',
+    'kondisi'   => $kamar['kondisi'] ?? 'aktif',
 ];
+$galat = [];
+
 if ($dikirim) {
     foreach (['nomor', 'harga', 'deskripsi', 'fasilitas'] as $kunci) {
         $nilai[$kunci] = trim((string) ($_POST[$kunci] ?? ''));
     }
-    $nilai['status'] = in_array($_POST['status'] ?? '', ['kosong', 'terisi'], true) ? $_POST['status'] : 'kosong';
+    $nilai['kondisi'] = in_array($_POST['kondisi'] ?? '', ['aktif', 'perawatan'], true) ? $_POST['kondisi'] : 'aktif';
+
+    // --- Validasi server (tidak pernah percaya validasi HTML/JS saja) ---
+    if ($nilai['nomor'] === '' || mb_strlen($nilai['nomor']) > 10) {
+        $galat[] = 'Nomor kamar wajib diisi (maksimal 10 karakter).';
+    } elseif (nomor_kamar_terpakai($nilai['nomor'], $kamar['id'] ?? null)) {
+        $galat[] = 'Nomor kamar "' . $nilai['nomor'] . '" sudah dipakai kamar lain.';
+    }
+
+    if (!ctype_digit($nilai['harga']) || (int) $nilai['harga'] < 1 || (int) $nilai['harga'] > 100000000) {
+        $galat[] = 'Harga sewa harus berupa angka lebih dari 0 (maksimal Rp100.000.000).';
+    }
+
+    if (mb_strlen($nilai['deskripsi']) > 1000) {
+        $galat[] = 'Deskripsi maksimal 1000 karakter.';
+    }
+
+    $daftarFasilitas = array_values(array_filter(array_map(
+        fn ($baris) => mb_substr(trim($baris), 0, 50),
+        preg_split('/\r\n|\r|\n/', $nilai['fasilitas'])
+    ), fn ($f) => $f !== ''));
+    if (count($daftarFasilitas) > 20) {
+        $galat[] = 'Maksimal 20 fasilitas.';
+    }
+
+    // Kamar yang sedang ditempati (penyewaan aktif) tidak boleh diubah
+    // menjadi kondisi 'perawatan' tanpa mengeluarkan penghuni terlebih
+    // dahulu -- ini bukan backend penghuni, jadi cukup ditolak di sini.
+    if ($modeEdit && $kamar !== null && $nilai['kondisi'] === 'perawatan' && $kamar['status'] === 'terisi') {
+        $galat[] = 'Kamar ini sedang ditempati (penyewaan aktif) dan tidak dapat diubah ke kondisi Perawatan.';
+    }
+
+    $unggahan = simpan_foto_upload($_FILES['foto'] ?? [], PATH_FOTO_KAMAR);
+    if (!$unggahan['berhasil']) {
+        $galat[] = $unggahan['pesan'];
+    }
+
+    if (empty($galat)) {
+        $dataSimpan = [
+            'nomor'     => $nilai['nomor'],
+            'harga'     => (int) $nilai['harga'],
+            'deskripsi' => $nilai['deskripsi'],
+            'fasilitas' => $daftarFasilitas,
+            'kondisi'   => $nilai['kondisi'],
+        ];
+
+        if ($unggahan['ada_file'] && $unggahan['nama_file'] !== null) {
+            $dataSimpan['foto_utama'] = $unggahan['nama_file'];
+        }
+
+        if ($modeEdit && $kamar !== null) {
+            perbarui_kamar($kamar['id'], $dataSimpan);
+            if ($unggahan['ada_file'] && $unggahan['nama_file'] !== null) {
+                hapus_foto_lama($kamar['foto'], PATH_FOTO_KAMAR);
+            }
+        } else {
+            $dataSimpan['foto_utama'] = $unggahan['nama_file'] ?? null;
+            tambah_kamar($dataSimpan);
+        }
+
+        header('Location: kamar.php?disimpan=1');
+        exit;
+    }
+
+    // Gagal validasi: hapus foto yang SUDAH terunggah ke disk (tidak jadi dipakai)
+    // supaya tidak ada file yatim menumpuk di folder upload.
+    if ($unggahan['ada_file'] && $unggahan['nama_file'] !== null) {
+        hapus_foto_lama($unggahan['nama_file'], PATH_FOTO_KAMAR);
+    }
 }
 
 $judulHalaman = $modeEdit ? ($kamar ? 'Edit Kamar ' . $kamar['nomor'] : 'Kamar Tidak Ditemukan') : 'Tambah Kamar';
@@ -64,15 +130,17 @@ require __DIR__ . '/includes/header.php';
         <p><?= $modeEdit ? 'Ubah informasi kamar.' : 'Isi informasi kamar baru.' ?></p>
     </div>
 
-    <?php if ($dikirim): ?>
-        <p class="notice notice--peringatan" role="status">
-            <strong>Data belum disimpan.</strong> Penyimpanan data kamar akan aktif setelah integrasi backend.
-            Isian Anda tetap ditampilkan di bawah<?= !empty($_FILES['foto']['name']) ? ', tetapi file foto perlu dipilih ulang' : '' ?>.
-        </p>
+    <?php if ($dikirim && $galat): ?>
+        <div class="notice notice--galat" role="alert">
+            <strong>Kamar belum disimpan. Periksa kembali isian berikut:</strong>
+            <ul>
+                <?php foreach ($galat as $pesan): ?>
+                    <li><?= e($pesan) ?></li>
+                <?php endforeach; ?>
+            </ul>
+        </div>
     <?php elseif ($metode === 'POST' && !$csrfValid): ?>
         <p class="notice notice--galat" role="alert">Sesi formulir sudah tidak valid. Muat ulang halaman ini dan coba lagi.</p>
-    <?php else: ?>
-        <p class="notice">Form ini masih tampilan. Penyimpanan data akan aktif setelah integrasi backend.</p>
     <?php endif; ?>
 
     <form method="post" action="<?= e($aksiForm) ?>" enctype="multipart/form-data" class="panel form-panel">
@@ -86,28 +154,32 @@ require __DIR__ . '/includes/header.php';
 
             <div class="form-group">
                 <label for="harga">Harga Sewa Bulanan (Rp)</label>
-                <input type="number" id="harga" name="harga" class="form-control" min="1" step="1" required
+                <input type="number" id="harga" name="harga" class="form-control" min="1" max="100000000" step="1" required
                        inputmode="numeric" value="<?= e($nilai['harga']) ?>" placeholder="Contoh: 500000">
             </div>
 
             <div class="form-group">
-                <label for="status">Status Kamar</label>
-                <select id="status" name="status" class="form-control">
-                    <option value="kosong"<?= $nilai['status'] === 'kosong' ? ' selected' : '' ?>>Kosong</option>
-                    <option value="terisi"<?= $nilai['status'] === 'terisi' ? ' selected' : '' ?>>Terisi</option>
+                <label for="kondisi">Kondisi Operasional</label>
+                <select id="kondisi" name="kondisi" class="form-control" aria-describedby="kondisi-hint">
+                    <option value="aktif"<?= $nilai['kondisi'] === 'aktif' ? ' selected' : '' ?>>Aktif</option>
+                    <option value="perawatan"<?= $nilai['kondisi'] === 'perawatan' ? ' selected' : '' ?>>Perawatan</option>
                 </select>
+                <span id="kondisi-hint" class="teks-catatan">
+                    Kamar berkondisi "Perawatan" tidak ditampilkan di website publik dan tidak dapat disewakan.
+                    Status Kosong/Terisi mengikuti data penyewaan secara otomatis, bukan diatur di sini.
+                </span>
             </div>
 
             <div class="form-group form-grid__penuh">
                 <label for="deskripsi">Deskripsi</label>
-                <textarea id="deskripsi" name="deskripsi" class="form-control" rows="3"><?= e($nilai['deskripsi']) ?></textarea>
+                <textarea id="deskripsi" name="deskripsi" class="form-control" rows="3" maxlength="1000"><?= e($nilai['deskripsi']) ?></textarea>
             </div>
 
             <div class="form-group form-grid__penuh">
                 <label for="fasilitas">Fasilitas</label>
                 <textarea id="fasilitas" name="fasilitas" class="form-control" rows="4"
                           aria-describedby="fasilitas-hint"><?= e($nilai['fasilitas']) ?></textarea>
-                <span id="fasilitas-hint" class="teks-catatan">Tulis satu fasilitas per baris.</span>
+                <span id="fasilitas-hint" class="teks-catatan">Tulis satu fasilitas per baris (maksimal 20 baris).</span>
             </div>
 
             <div class="form-group form-grid__penuh">
@@ -121,7 +193,7 @@ require __DIR__ . '/includes/header.php';
                 <?php endif; ?>
                 <input type="file" id="foto" name="foto" class="form-control" accept="image/jpeg,image/png,image/webp"
                        aria-describedby="foto-hint">
-                <span id="foto-hint" class="teks-catatan">Format JPG, PNG, atau WebP.</span>
+                <span id="foto-hint" class="teks-catatan">Format JPG, PNG, atau WebP, maksimal 2 MB. Boleh dikosongkan.</span>
             </div>
         </div>
 

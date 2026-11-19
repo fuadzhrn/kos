@@ -6,21 +6,42 @@ require_once __DIR__ . '/../data/kamar.php';
 $judulHalaman = 'Data Kamar';
 $menuAktif    = 'kamar';
 
-$daftarKamar = get_semua_kamar();
+$daftarKamar = get_semua_kamar(true); // admin: tampilkan juga kamar berkondisi 'perawatan'
 $totalKamar  = count($daftarKamar);
 
 /*
- * Hapus kamar: BELUM menghapus apa pun.
- * Permintaan hapus hanya dijawab dengan pesan bahwa fitur aktif setelah integrasi backend.
- * Nanti: validasi CSRF, cek kamar tidak sedang ditempati, lalu DELETE FROM kamar WHERE id = ?
+ * Hapus kamar (nyata): hanya diizinkan jika kamar TIDAK PERNAH punya
+ * riwayat penyewaan sama sekali (lihat hapus_kamar() di data/kamar.php).
+ * Jika sedang ditempati, otomatis tertolak juga lewat pemeriksaan itu
+ * (penyewaan aktif = riwayat penyewaan).
  */
 $pesanAksi = null;
 if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && ($_POST['aksi'] ?? '') === 'hapus') {
-    $idHapus    = filter_input(INPUT_POST, 'id', FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
-    $kamarHapus = $idHapus ? get_kamar_by_id($idHapus) : null;
-    $pesanAksi  = $kamarHapus
-        ? 'Kamar ' . $kamarHapus['nomor'] . ' tidak dihapus. Fitur hapus akan aktif setelah integrasi backend.'
-        : 'Data kamar tidak ditemukan.';
+    if (!csrf_valid($_POST['csrf_token'] ?? null)) {
+        $pesanAksi = 'Sesi formulir sudah tidak valid. Muat ulang halaman ini dan coba lagi.';
+    } else {
+        $idHapus    = filter_input(INPUT_POST, 'id', FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
+        $kamarHapus = $idHapus ? get_kamar_by_id($idHapus) : null;
+
+        if ($kamarHapus === null) {
+            $pesanAksi = 'Data kamar tidak ditemukan.';
+        } else {
+            $hasil = hapus_kamar($idHapus);
+            if ($hasil['berhasil']) {
+                require_once __DIR__ . '/../includes/upload.php';
+                hapus_foto_lama($kamarHapus['foto'], PATH_FOTO_KAMAR);
+                header('Location: kamar.php?dihapus=1');
+                exit;
+            }
+            $pesanAksi = $hasil['pesan'];
+        }
+    }
+}
+if (isset($_GET['dihapus'])) {
+    $pesanAksi = 'Kamar berhasil dihapus.';
+}
+if (isset($_GET['disimpan'])) {
+    $pesanAksi = 'Kamar berhasil disimpan.';
 }
 
 require __DIR__ . '/includes/header.php';
@@ -70,6 +91,7 @@ require __DIR__ . '/includes/header.php';
                         <th scope="col" class="tabel__angka">Harga Sewa</th>
                         <th scope="col">Fasilitas</th>
                         <th scope="col">Status</th>
+                        <th scope="col">Kondisi</th>
                         <th scope="col">Aksi</th>
                     </tr>
                 </thead>
@@ -93,10 +115,14 @@ require __DIR__ . '/includes/header.php';
                                 <span class="badge badge--<?= e($kamar['status']) ?>"><?= e(ucfirst($kamar['status'])) ?></span>
                             </td>
                             <td>
+                                <span class="badge badge--<?= e($kamar['kondisi']) ?>"><?= e($kamar['kondisi'] === 'perawatan' ? 'Perawatan' : 'Aktif') ?></span>
+                            </td>
+                            <td>
                                 <div class="aksi-grup">
                                     <a href="kamar-form.php?id=<?= (int) $kamar['id'] ?>" class="btn btn-outline btn-sm"
                                        aria-label="Edit <?= e($nama) ?>">Edit</a>
-                                    <form method="post" action="kamar.php" data-konfirmasi="Hapus <?= e($nama) ?>? (Fitur hapus belum aktif, data tidak akan berubah.)">
+                                    <form method="post" action="kamar.php" data-konfirmasi="Hapus <?= e($nama) ?>? Kamar dengan riwayat penyewaan tidak akan terhapus.">
+                                        <?= csrf_field() ?>
                                         <input type="hidden" name="aksi" value="hapus">
                                         <input type="hidden" name="id" value="<?= (int) $kamar['id'] ?>">
                                         <button type="submit" class="btn btn-hapus btn-sm" aria-label="Hapus <?= e($nama) ?>">Hapus</button>
@@ -106,7 +132,7 @@ require __DIR__ . '/includes/header.php';
                         </tr>
                     <?php endforeach; ?>
                     <tr class="tabel__kosong" data-filter-kosong hidden>
-                        <td colspan="7">Tidak ada kamar yang sesuai dengan pencarian.</td>
+                        <td colspan="8">Tidak ada kamar yang sesuai dengan pencarian.</td>
                     </tr>
                 </tbody>
             </table>
@@ -114,6 +140,6 @@ require __DIR__ . '/includes/header.php';
     <?php endif; ?>
 </section>
 
-<p class="teks-catatan">Tambah, edit, dan hapus kamar akan aktif setelah integrasi backend (PHP-MySQL).</p>
+<p class="teks-catatan">Kamar dengan riwayat penyewaan tidak dapat dihapus permanen &mdash; gunakan kondisi "Perawatan" untuk menonaktifkannya dari penyewaan baru.</p>
 
 <?php require __DIR__ . '/includes/footer.php'; ?>

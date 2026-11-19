@@ -16,8 +16,8 @@
         </mxCell>
 
         <!-- kamar -->
-        <mxCell id="t_kamar" value="kamar&#10;----------------------------&#10;PK  id&#10;UQ  nomor&#10;    harga&#10;    deskripsi, fasilitas (JSON)&#10;    foto_utama, galeri (JSON)&#10;    status (kosong|terisi) [cache]" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacingLeft=8;spacingTop=6;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=12;" vertex="1" parent="1">
-          <mxGeometry x="720" y="40" width="260" height="150" as="geometry" />
+        <mxCell id="t_kamar" value="kamar&#10;----------------------------&#10;PK  id&#10;UQ  nomor&#10;    harga&#10;    deskripsi, fasilitas (JSON)&#10;    foto_utama, galeri (JSON)&#10;    kondisi (aktif|perawatan)&#10;    status kosong/terisi: TIDAK disimpan,&#10;    selalu dihitung dari penyewaan aktif" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacingLeft=8;spacingTop=6;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="720" y="40" width="260" height="170" as="geometry" />
         </mxCell>
 
         <!-- penyewaan -->

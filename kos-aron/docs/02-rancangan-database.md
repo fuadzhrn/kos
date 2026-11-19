@@ -307,7 +307,33 @@ rancangan di atas, diminta langsung oleh instruksi tahap implementasi
 berubah dari ERD yang sudah disetujui — lihat `docs/erd.drawio` (tidak
 diubah) dan hasil pemeriksaan struktur di `docs/06-hasil-pengujian.md`.
 
-## 2.12 DDL final
+## 2.12 Perubahan pada tahap backend Data Kamar (disetujui user)
+
+Saat mengimplementasikan CRUD kamar, ada **satu** perubahan struktural pada
+tabel `kamar`, diminta langsung oleh instruksi tahap ini:
+
+- Kolom `status ENUM('kosong','terisi')` **dihapus**. Instruksi tahap ini
+  menegaskan "Status ketersediaan kamar tidak boleh bergantung pada input
+  manual yang bertentangan dengan penyewaan" — menyimpannya sebagai kolom
+  (meski diberi komentar "cache") tetap membuka risiko nilainya tidak
+  sinkron dengan tabel `penyewaan` yang sebenarnya. Nilai ini sekarang
+  **selalu dihitung ulang** setiap kali dibaca: `terisi` jika ada baris
+  `penyewaan` berstatus `aktif` untuk kamar itu, `kosong` jika tidak ada
+  (lihat `data/kamar.php`, fungsi `get_semua_kamar()` dkk.) — tidak ada
+  lagi satu pun jalur di aplikasi yang bisa menulis nilai ini secara
+  manual.
+- Kolom `kondisi ENUM('aktif','perawatan') NOT NULL DEFAULT 'aktif'`
+  **ditambahkan**. Ini konsep yang BERBEDA dari ketersediaan: status
+  operasional yang memang diatur manual oleh admin ("kamar dalam
+  perawatan tidak dapat disewakan" — TUGAS 2 tahap ini), independen dari
+  ada/tidaknya penyewaan aktif. Index `idx_kamar_status` diganti
+  `idx_kamar_kondisi`.
+
+**Tidak ada** tabel lain, primary key, foreign key, atau relasi yang
+berubah — lihat `docs/erd.drawio` (kotak `kamar` diperbarui mengikuti
+perubahan ini) dan `database/schema.sql` untuk DDL final.
+
+## 2.13 DDL final
 
 DDL lengkap yang sudah **benar-benar dijalankan dan diverifikasi** (termasuk
 perubahan §2.11) ada di [`database/schema.sql`](../database/schema.sql) —
@@ -322,7 +348,8 @@ CREATE TABLE kamar (
     id         BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     nomor      VARCHAR(10)     NOT NULL,
     harga      DECIMAL(12, 2)  NOT NULL,  -- lihat §2.11: DECIMAL, bukan INT
-    status     ENUM('kosong', 'terisi') NOT NULL DEFAULT 'kosong',
+    kondisi    ENUM('aktif', 'perawatan') NOT NULL DEFAULT 'aktif', -- lihat §2.12
+    -- (tidak ada kolom status kosong/terisi -- lihat §2.12, selalu dihitung)
     -- ...kolom & constraint selengkapnya ada di database/schema.sql
     PRIMARY KEY (id),
     UNIQUE KEY uq_kamar_nomor (nomor),

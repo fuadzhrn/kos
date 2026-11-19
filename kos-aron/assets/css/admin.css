@@ -840,6 +840,11 @@ input[readonly].form-control {
     color: var(--muted);
 }
 
+/* Kondisi operasional kamar */
+.badge--perawatan {
+    color: var(--warning);
+}
+
 /* Status baca notifikasi (penghuni/notifikasi.php) */
 .badge--belum-dibaca {
     color: var(--primary);
