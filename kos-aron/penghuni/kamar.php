@@ -49,7 +49,7 @@ if ($penghuniLogin !== null) {
             </div>
 
             <p class="detail-kamar__harga">
-                <?= e(format_rupiah($kamarSaya['harga'])) ?> <span>/ bulan</span>
+                <?= e(format_rupiah($penghuniLogin['harga_sewa_disepakati'])) ?> <span>/ bulan</span>
             </p>
 
             <?php if (!empty($kamarSaya['deskripsi'])): ?>

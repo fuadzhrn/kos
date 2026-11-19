@@ -1,4 +1,3 @@
-            <p class="admin-catatan">Data pada halaman admin masih data contoh dan belum terhubung ke database.</p>
         </main>
     </div>
 </div>

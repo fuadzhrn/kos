@@ -1,101 +1,33 @@
 <?php
-/**
- * DATA DUMMY TAGIHAN
- * ----------------------------------------------------------------
- * Tagihan sewa bulanan per penghuni. Nominal sama dengan harga kamar
- * pada data/kamar.php. Semua data hanya CONTOH.
- * Nanti diganti query ke tabel `tagihan` (relasi penghuni_id -> penghuni.id).
- *
- * Aturan rancangan:
- * - Tagihan hanya dibuat untuk penghuni dengan penyewaan AKTIF.
- * - Satu penghuni hanya punya satu tagihan per periode (tidak ada tagihan ganda).
- * - Status TIDAK disimpan, tetapi dihitung oleh status_tagihan() berdasarkan
- *   ada/tidaknya pembayaran (lihat data/pembayaran.php):
- *     lunas       -> sudah ada pembayaran yang dicatat admin untuk tagihan ini
- *     terlambat   -> belum ada pembayaran dan hari ini sudah melewati jatuh_tempo
- *     belum_bayar -> belum ada pembayaran dan belum melewati jatuh_tempo
- *
- * Struktur satu tagihan:
- *   id           int     ID unik
- *   penghuni_id  int     ID penghuni
- *   periode      string  Bulan tagihan, format YYYY-MM
- *   jumlah       int     Nominal tagihan (Rupiah)
- *   jatuh_tempo  string  Tanggal jatuh tempo (YYYY-MM-DD)
- *   keterangan   string  Catatan (opsional)
- *
- * CATATAN KETERGANTUNGAN: file ini dan data/pembayaran.php saling me-require.
- * Tagihan butuh data pembayaran untuk menghitung status 'lunas', sedangkan
- * pembayaran butuh data tagihan mentah untuk menampilkan nama penghuni/nomor
- * kamar/periode di riwayat pembayaran. Ini aman di PHP karena semua fungsi
- * tingkat atas pada sebuah file didaftarkan SEBELUM baris kode di file itu
- * benar-benar dijalankan, selama tidak ada kode tingkat atas (di luar fungsi)
- * yang langsung memanggil fungsi dari file lain saat file sedang dimuat.
- */
-
 require_once __DIR__ . '/penghuni.php';
+
+const SQL_RIWAYAT_TAGIHAN = 'SELECT t.*, s.penghuni_id, p.nama AS nama_penghuni, k.nomor AS nomor_kamar,
+    pb.tanggal_bayar FROM tagihan t JOIN penyewaan s ON s.id = t.penyewaan_id
+    JOIN penghuni p ON p.id = s.penghuni_id JOIN kamar k ON k.id = s.kamar_id
+    LEFT JOIN pembayaran pb ON pb.tagihan_id = t.id AND pb.nominal_dibayar = t.jumlah';
 
 function data_tagihan(): array
 {
-    return [
-        ['id' => 1, 'penghuni_id' => 1, 'periode' => '2026-10', 'jumlah' => 500000, 'jatuh_tempo' => '2026-10-20', 'keterangan' => ''],
-        ['id' => 2, 'penghuni_id' => 2, 'periode' => '2026-10', 'jumlah' => 600000, 'jatuh_tempo' => '2026-10-20', 'keterangan' => ''],
-        ['id' => 3, 'penghuni_id' => 3, 'periode' => '2026-10', 'jumlah' => 550000, 'jatuh_tempo' => '2026-10-20', 'keterangan' => ''],
-        ['id' => 4, 'penghuni_id' => 1, 'periode' => '2026-11', 'jumlah' => 500000, 'jatuh_tempo' => '2026-11-20', 'keterangan' => ''],
-        ['id' => 5, 'penghuni_id' => 2, 'periode' => '2026-11', 'jumlah' => 600000, 'jatuh_tempo' => '2026-11-20', 'keterangan' => ''],
-        ['id' => 6, 'penghuni_id' => 3, 'periode' => '2026-11', 'jumlah' => 550000, 'jatuh_tempo' => '2026-11-20', 'keterangan' => ''],
-    ];
+    return koneksi_database()->query(SQL_RIWAYAT_TAGIHAN . ' ORDER BY t.periode DESC, k.nomor, t.id')->fetchAll();
 }
 
-/** Satu baris tagihan MENTAH (tanpa status/nama/kamar) berdasarkan id, atau null. */
-function cari_data_tagihan_mentah(int $id): ?array
-{
-    foreach (data_tagihan() as $tagihan) {
-        if ($tagihan['id'] === $id) {
-            return $tagihan;
-        }
-    }
-    return null;
-}
-
-/**
- * Status tagihan: 'lunas' | 'terlambat' | 'belum_bayar'.
- * Dihitung dari ada/tidaknya pembayaran (data/pembayaran.php) dan jatuh_tempo.
- */
 function status_tagihan(array $tagihan, ?string $hariIni = null): string
 {
-    if (get_pembayaran_by_tagihan($tagihan['id']) !== null) {
+    if ($tagihan['tanggal_bayar'] !== null) {
         return 'lunas';
     }
-    $hariIni ??= tanggal_hari_ini();
-    return $hariIni > $tagihan['jatuh_tempo'] ? 'terlambat' : 'belum_bayar';
+    return ($hariIni ?? tanggal_hari_ini()) > $tagihan['jatuh_tempo'] ? 'terlambat' : 'belum_bayar';
 }
 
-/** Lengkapi tagihan dengan status, tanggal bayar, nama penghuni, dan nomor kamar. */
 function lengkapi_tagihan(array $tagihan): array
 {
-    $penghuni   = get_penghuni_by_id($tagihan['penghuni_id']);
-    $kamar      = $penghuni ? get_kamar_by_id($penghuni['kamar_id']) : null;
-    $pembayaran = get_pembayaran_by_tagihan($tagihan['id']);
-
-    $tagihan['status']        = status_tagihan($tagihan);
-    $tagihan['tanggal_bayar'] = $pembayaran['tanggal_bayar'] ?? null;
-    $tagihan['nama_penghuni'] = $penghuni['nama'] ?? '-';
-    $tagihan['nomor_kamar']   = $kamar['nomor'] ?? '-';
+    $tagihan['status'] = status_tagihan($tagihan);
     return $tagihan;
 }
 
-/**
- * Semua tagihan yang sudah dilengkapi, periode terbaru di atas.
- * Nanti setara dengan:
- *   SELECT t.*, p.nama, k.nomor FROM tagihan t
- *   JOIN penghuni p ON p.id = t.penghuni_id JOIN kamar k ON k.id = p.kamar_id
- *   ORDER BY t.periode DESC, k.nomor
- */
 function get_semua_tagihan(): array
 {
-    $hasil = array_map('lengkapi_tagihan', data_tagihan());
-    usort($hasil, fn ($a, $b) => [$b['periode'], $a['nomor_kamar']] <=> [$a['periode'], $b['nomor_kamar']]);
-    return $hasil;
+    return array_map('lengkapi_tagihan', data_tagihan());
 }
 
 /** Tagihan terbaru (untuk dashboard). */
@@ -107,14 +39,18 @@ function get_tagihan_terbaru(int $batas): array
 /** Satu tagihan (sudah dilengkapi) berdasarkan id, atau null. */
 function get_tagihan_by_id(int $id): ?array
 {
-    $tagihan = cari_data_tagihan_mentah($id);
-    return $tagihan !== null ? lengkapi_tagihan($tagihan) : null;
+    $stmt = koneksi_database()->prepare(SQL_RIWAYAT_TAGIHAN . ' WHERE t.id = ?');
+    $stmt->execute([$id]);
+    $tagihan = $stmt->fetch();
+    return $tagihan ? lengkapi_tagihan($tagihan) : null;
 }
 
 /** Semua tagihan milik satu penghuni, periode terbaru di atas. */
 function get_tagihan_by_penghuni(int $penghuniId): array
 {
-    return array_values(array_filter(get_semua_tagihan(), fn ($t) => $t['penghuni_id'] === $penghuniId));
+    $stmt = koneksi_database()->prepare(SQL_RIWAYAT_TAGIHAN . ' WHERE s.penghuni_id = ? ORDER BY t.periode DESC, t.id DESC');
+    $stmt->execute([$penghuniId]);
+    return array_map('lengkapi_tagihan', $stmt->fetchAll());
 }
 
 /**
@@ -125,7 +61,10 @@ function get_tagihan_by_penghuni(int $penghuniId): array
  */
 function get_tagihan_berjalan(int $penghuniId): ?array
 {
-    $daftar = get_tagihan_by_penghuni($penghuniId); // sudah terurut, periode terbaru di atas
+    $stmt = koneksi_database()->prepare(SQL_RIWAYAT_TAGIHAN . " WHERE s.penghuni_id = ? AND s.status = 'aktif'
+        ORDER BY t.periode DESC, t.id DESC");
+    $stmt->execute([$penghuniId]);
+    $daftar = array_map('lengkapi_tagihan', $stmt->fetchAll());
     if (empty($daftar)) {
         return null;
     }
@@ -156,19 +95,104 @@ function daftar_periode_tagihan(): array
     return $periode;
 }
 
-/**
- * Tagihan penghuni pada periode tertentu (aturan: tidak boleh ganda), atau null.
- *
- * @param int|null $kecualiId ID tagihan yang sedang diedit
- */
-function cari_tagihan_periode(int $penghuniId, string $periode, ?int $kecualiId = null): ?array
+/** Satu periode kalender MySQL, misalnya 2026-11. */
+function akhir_bulan_tagihan(string $periode): string
 {
-    foreach (data_tagihan() as $tagihan) {
-        if ($tagihan['penghuni_id'] === $penghuniId && $tagihan['periode'] === $periode && $tagihan['id'] !== $kecualiId) {
-            return $tagihan;
-        }
+    if (!preg_match('/^[1-9][0-9]{3}-(0[1-9]|1[0-2])$/D', $periode)) {
+        throw new DomainException('Pilih bulan dan tahun yang valid.');
     }
-    return null;
+    return (new DateTimeImmutable($periode . '-01'))->format('Y-m-t');
+}
+
+/** Data yang ditinjau admin. Saat konfirmasi, baca ulang satu penyewaan dengan kunci transaksi. */
+function calon_tagihan(string $periode, ?int $sewaId = null, bool $kunci = false): array
+{
+    $akhir = akhir_bulan_tagihan($periode);
+    $sql = "SELECT s.id AS penyewaan_id, s.penghuni_id, s.kamar_id, p.nama, k.nomor,
+                s.tanggal_masuk, s.tanggal_keluar, s.hari_jatuh_tempo, s.harga_sewa_disepakati,
+                t.id AS tagihan_id, t.jumlah AS jumlah_lama, t.jatuh_tempo AS tempo_lama
+            FROM penyewaan s JOIN penghuni p ON p.id = s.penghuni_id JOIN kamar k ON k.id = s.kamar_id
+            LEFT JOIN tagihan t ON t.penyewaan_id = s.id AND t.periode = ?
+            WHERE s.status = 'aktif' AND s.tanggal_masuk <= ?
+                AND (s.tanggal_keluar IS NULL OR s.tanggal_keluar >= ?)";
+    $params = [$periode, $akhir, $periode . '-01'];
+    if ($sewaId !== null) {
+        $sql .= ' AND s.id = ?';
+        $params[] = $sewaId;
+    }
+    $sql .= ' ORDER BY s.id';
+    if ($kunci) {
+        $sql .= ' FOR UPDATE';
+    }
+    $stmt = koneksi_database()->prepare($sql);
+    $stmt->execute($params);
+    $hasil = [];
+    foreach ($stmt as $sewa) {
+        $hari = min((int)$sewa['hari_jatuh_tempo'], (int)substr($akhir, -2));
+        $tempo = sprintf('%s-%02d', $periode, $hari);
+        if ($tempo < $sewa['tanggal_masuk'] || ($sewa['tanggal_keluar'] !== null && $tempo > $sewa['tanggal_keluar'])) {
+            continue;
+        }
+        $hasil[] = [
+            'penyewaan_id' => (int)$sewa['penyewaan_id'],
+            'penghuni_id' => (int)$sewa['penghuni_id'],
+            'kamar_id' => (int)$sewa['kamar_id'],
+            'nama' => $sewa['nama'],
+            'nomor' => $sewa['nomor'],
+            'hari_jatuh_tempo' => (int)$sewa['hari_jatuh_tempo'],
+            'jumlah' => $sewa['jumlah_lama'] ?? $sewa['harga_sewa_disepakati'],
+            'jatuh_tempo' => $sewa['tempo_lama'] ?? $tempo,
+            'sudah_ada' => $sewa['tagihan_id'] !== null,
+        ];
+    }
+    return $hasil;
+}
+
+/** Hanya baris dalam pratinjau sesi yang boleh dibuat. Kegagalan SQL membatalkan seluruh transaksi. */
+function konfirmasi_tagihan(array $pratinjau, int $adminId): array
+{
+    $db = koneksi_database();
+    $baris = $pratinjau['baris'];
+    $hasil = ['berhasil' => 0, 'dilewati' => 0, 'gagal' => 0];
+    // Baris yang sejak awal diberi label "dilewati" tidak pernah ditulis.
+    $baru = array_filter($baris, fn ($r) => !$r['sudah_ada']);
+    $hasil['dilewati'] = count($baris) - count($baru);
+    try {
+        $db->beginTransaction();
+        $insert = $db->prepare('INSERT INTO tagihan (penyewaan_id, periode, jumlah, jatuh_tempo, keterangan, dibuat_oleh)
+            VALUES (?, ?, ?, ?, ?, ?)');
+        foreach ($baru as $lama) {
+            $sekarang = calon_tagihan($pratinjau['periode'], $lama['penyewaan_id'], true)[0] ?? null;
+            if ($sekarang !== null && $sekarang['sudah_ada']) {
+                $hasil['dilewati']++;
+                continue;
+            }
+            if ($sekarang !== $lama) {
+                // Sewa berakhir atau data yang diperiksa admin berubah.
+                $hasil['gagal']++;
+                continue;
+            }
+            try {
+                $insert->execute([$lama['penyewaan_id'], $pratinjau['periode'], $sekarang['jumlah'],
+                    $sekarang['jatuh_tempo'], $pratinjau['keterangan'], $adminId]);
+                $hasil['berhasil']++;
+            } catch (PDOException $e) {
+                if ((int)($e->errorInfo[1] ?? 0) !== 1062) {
+                    throw $e;
+                }
+                $hasil['dilewati']++;
+            }
+        }
+        $db->commit();
+    } catch (PDOException $e) {
+        if ($db->inTransaction()) {
+            $db->rollBack();
+        }
+        error_log('Konfirmasi tagihan gagal. SQLSTATE ' . $e->getCode());
+        $hasil['berhasil'] = 0;
+        $hasil['gagal'] = count($baris) - $hasil['dilewati'];
+    }
+    return $hasil;
 }
 
 /**
@@ -216,5 +240,4 @@ function ringkasan_tagihan_belum_lunas(): array
     return $hasil;
 }
 
-// Lihat catatan ketergantungan di atas: aman karena hanya fungsi yang saling memanggil.
 require_once __DIR__ . '/pembayaran.php';

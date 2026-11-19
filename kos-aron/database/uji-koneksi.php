@@ -1,18 +1,19 @@
 <?php
 /**
- * Alat uji koneksi database (CLI atau browser).
+ * Alat uji koneksi database (CLI).
  * Menguji koneksi PDO ke db_kos_aron lewat includes/koneksi.php,
  * memastikan prepared statement & pengambilan data bekerja, DAN
  * memastikan password/kredensial TIDAK pernah ikut ditampilkan.
  *
  * Jalankan: php database/uji-koneksi.php
- * (atau akses lewat browser di environment lokal -- tidak membaca input
- * apa pun dari pengunjung, aman diakses langsung untuk pengujian lokal).
  */
 
 require_once __DIR__ . '/../includes/koneksi.php';
 
-header('Content-Type: text/plain; charset=utf-8');
+if (PHP_SAPI !== 'cli') {
+    http_response_code(404);
+    exit;
+}
 
 try {
     $pdo = koneksi_database();
@@ -22,8 +23,8 @@ try {
     echo '    Error mode: ' . ($pdo->getAttribute(PDO::ATTR_ERRMODE) === PDO::ERRMODE_EXCEPTION ? 'EXCEPTION' : 'lainnya') . "\n\n";
 
     // Uji prepared statement sungguhan (bukan emulasi).
-    $stmt = $pdo->prepare('SELECT COUNT(*) AS jumlah FROM kamar WHERE status = :status');
-    $stmt->execute(['status' => 'terisi']);
+    $stmt = $pdo->prepare('SELECT COUNT(DISTINCT kamar_id) AS jumlah FROM penyewaan WHERE status = :status');
+    $stmt->execute(['status' => 'aktif']);
     $jumlahTerisi = (int) $stmt->fetch()['jumlah'];
     echo "[OK] Prepared statement berjalan. Kamar berstatus 'terisi': {$jumlahTerisi}\n";
 
@@ -38,7 +39,6 @@ try {
 } catch (Throwable $e) {
     // Sengaja TIDAK mencetak $e->getMessage() dari PDOException asli --
     // koneksi_database() sudah melempar RuntimeException berpesan aman.
-    http_response_code(500);
-    echo '[GAGAL] ' . $e->getMessage() . "\n";
+    echo "[GAGAL] Pemeriksaan database gagal. Periksa konfigurasi dan skema lokal.\n";
     exit(1);
 }

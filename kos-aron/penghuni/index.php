@@ -53,7 +53,7 @@ if ($tagihanBerjalan !== null && $tagihanBerjalan['status'] === 'belum_bayar') {
             </div>
             <div>
                 <dt>Harga Sewa Bulanan</dt>
-                <dd><?= $kamarSaya ? e(format_rupiah($kamarSaya['harga'])) . ' / bulan' : '-' ?></dd>
+                <dd><?= $kamarSaya ? e(format_rupiah($penghuniLogin['harga_sewa_disepakati'])) . ' / bulan' : '-' ?></dd>
             </div>
             <div>
                 <dt>Tanggal Jatuh Tempo</dt>

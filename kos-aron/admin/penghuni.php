@@ -6,22 +6,29 @@ require_once __DIR__ . '/../data/penghuni.php'; // juga memuat data kamar
 $judulHalaman = 'Data Penghuni';
 $menuAktif    = 'penghuni';
 
-$daftarPenghuni = get_semua_penghuni();
-$totalPenghuni  = count($daftarPenghuni);
-
-/*
- * Nonaktifkan penghuni: BELUM mengubah data apa pun.
- * Nanti (backend): validasi CSRF, set status = 'tidak_aktif', isi tanggal_keluar,
- * ubah status kamar menjadi 'kosong'. Data penghuni & riwayat tagihan TIDAK dihapus.
- */
-$pesanAksi = null;
-if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && ($_POST['aksi'] ?? '') === 'nonaktifkan') {
-    $idTarget = filter_input(INPUT_POST, 'id', FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
-    $target   = $idTarget ? get_penghuni_by_id($idTarget) : null;
-    $pesanAksi = $target
-        ? $target['nama'] . ' tidak dinonaktifkan. Fitur ini akan aktif setelah integrasi backend; saat itu data dan riwayat penghuni tetap disimpan.'
-        : 'Data penghuni tidak ditemukan.';
+$pesanAksi = $_SESSION['pesan_penghuni'] ?? null;
+unset($_SESSION['pesan_penghuni']);
+if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
+    if (!csrf_valid(is_string($_POST['csrf_token'] ?? null) ? $_POST['csrf_token'] : null)) {
+        http_response_code(403);
+        $pesanAksi = 'Sesi formulir sudah tidak valid. Muat ulang halaman.';
+    } elseif (($_POST['aksi'] ?? '') === 'nonaktifkan') {
+        try {
+            akhiri_penyewaan((int)filter_input(INPUT_POST, 'id', FILTER_VALIDATE_INT),
+                (int)filter_input(INPUT_POST, 'sewa_id', FILTER_VALIDATE_INT),
+                is_string($_POST['tanggal_keluar'] ?? null) ? $_POST['tanggal_keluar'] : '');
+            $_SESSION['pesan_penghuni'] = 'Penyewaan selesai. Kamar telah dilepas dan riwayat tersimpan.';
+            header('Location: penghuni.php', true, 303);
+            exit;
+        } catch (DomainException $e) {
+            $pesanAksi = $e->getMessage();
+        } catch (PDOException $e) {
+            $pesanAksi = 'Penyimpanan gagal. Muat ulang halaman dan coba lagi.';
+        }
+    }
 }
+$daftarPenghuni = get_semua_penghuni();
+$totalPenghuni = count($daftarPenghuni);
 
 require __DIR__ . '/includes/header.php';
 ?>
@@ -75,14 +82,13 @@ require __DIR__ . '/includes/header.php';
                 </thead>
                 <tbody>
                     <?php foreach ($daftarPenghuni as $i => $p): ?>
-                        <?php $kamar = get_kamar_by_id($p['kamar_id']); ?>
                         <tr data-baris data-status="<?= e($p['status']) ?>" data-cari="<?= e(mb_strtolower($p['nama'])) ?>">
                             <td class="tabel__no"><?= $i + 1 ?></td>
                             <td class="tabel__utama">
                                 <?= e($p['nama']) ?>
                                 <span class="tabel__sub"><?= e($p['akun']) ?></span>
                             </td>
-                            <td><?= $kamar ? 'Kamar ' . e($kamar['nomor']) : '-' ?></td>
+                            <td><?= $p['nomor'] !== null ? 'Kamar ' . e($p['nomor']) : '-' ?></td>
                             <td><?= e($p['no_telepon']) ?></td>
                             <td class="tabel__tanggal"><?= e(format_tanggal($p['tanggal_masuk'])) ?></td>
                             <td>
@@ -96,10 +102,16 @@ require __DIR__ . '/includes/header.php';
                                        aria-label="Edit <?= e($p['nama']) ?>">Edit</a>
                                     <?php if ($p['status'] === 'aktif'): ?>
                                         <form method="post" action="penghuni.php"
-                                              data-konfirmasi="Nonaktifkan <?= e($p['nama']) ?>? (Fitur belum aktif, data tidak akan berubah.)">
+                                              data-konfirmasi="Akhiri penyewaan <?= e($p['nama']) ?> pada tanggal yang dipilih?">
+                                            <?= csrf_field() ?>
+                                            <input type="hidden" name="sewa_id" value="<?= (int)$p['penyewaan_id'] ?>">
+                                            <label>Tanggal keluar
+                                                <input type="date" class="form-control" name="tanggal_keluar" required
+                                                       min="<?= e($p['tanggal_masuk']) ?>" max="<?= e(tanggal_hari_ini()) ?>" value="<?= e(tanggal_hari_ini()) ?>">
+                                            </label>
                                             <input type="hidden" name="aksi" value="nonaktifkan">
                                             <input type="hidden" name="id" value="<?= (int) $p['id'] ?>">
-                                            <button type="submit" class="btn btn-hapus btn-sm" aria-label="Nonaktifkan <?= e($p['nama']) ?>">Nonaktifkan</button>
+                                            <button type="submit" class="btn btn-hapus btn-sm" aria-label="Akhiri sewa <?= e($p['nama']) ?>">Akhiri Sewa</button>
                                         </form>
                                     <?php endif; ?>
                                 </div>
@@ -115,6 +127,6 @@ require __DIR__ . '/includes/header.php';
     <?php endif; ?>
 </section>
 
-<p class="teks-catatan">Tambah, edit, dan nonaktifkan penghuni akan aktif setelah integrasi backend (PHP-MySQL). Penghuni yang keluar dinonaktifkan, bukan dihapus, agar riwayatnya tetap tersimpan.</p>
+<p class="teks-catatan">Setelah penghuni keluar, admin dapat melihat riwayat atau memulai penyewaan baru melalui Edit.</p>
 
 <?php require __DIR__ . '/includes/footer.php'; ?>

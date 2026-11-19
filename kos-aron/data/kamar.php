@@ -217,8 +217,29 @@ function perbarui_kamar(int $id, array $data): void
         $params['foto_utama'] = $data['foto_utama'];
     }
 
-    $stmt = $pdo->prepare('UPDATE kamar SET ' . implode(', ', $set) . ' WHERE id = :id');
-    $stmt->execute($params);
+    $pdo->beginTransaction();
+    try {
+        $lock = $pdo->prepare('SELECT id FROM kamar WHERE id = ? FOR UPDATE');
+        $lock->execute([$id]);
+        if (!$lock->fetchColumn()) {
+            throw new DomainException('Kamar sudah tidak tersedia.');
+        }
+        if ($data['kondisi'] === 'perawatan') {
+            $sewa = $pdo->prepare("SELECT id FROM penyewaan WHERE kamar_id = ? AND status = 'aktif' FOR UPDATE");
+            $sewa->execute([$id]);
+            if ($sewa->fetchColumn()) {
+                throw new DomainException('Akhiri penyewaan aktif sebelum mengubah kondisi kamar menjadi perawatan.');
+            }
+        }
+        $stmt = $pdo->prepare('UPDATE kamar SET ' . implode(', ', $set) . ' WHERE id = :id');
+        $stmt->execute($params);
+        $pdo->commit();
+    } catch (Throwable $error) {
+        if ($pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+        throw $error;
+    }
 }
 
 /**

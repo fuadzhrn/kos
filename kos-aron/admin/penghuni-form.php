@@ -17,53 +17,37 @@ if ($modeEdit) {
 }
 $idPenghuni = $penghuni['id'] ?? null;
 
+$aktif = ($penghuni['status'] ?? '') === 'aktif';
 $nilai = [
-    'nama'          => $penghuni['nama'] ?? '',
-    'no_telepon'    => $penghuni['no_telepon'] ?? '',
-    'akun'          => $penghuni['akun'] ?? '',
-    'kamar_id'      => isset($penghuni['kamar_id']) ? (string) $penghuni['kamar_id'] : '',
-    'tanggal_masuk' => $penghuni['tanggal_masuk'] ?? '',
-    'status'        => $penghuni['status'] ?? 'aktif',
+    'nama' => $penghuni['nama'] ?? '',
+    'no_telepon' => $penghuni['no_telepon'] ?? '',
+    'akun' => $penghuni['akun'] ?? '',
+    'sewa_aktif' => $aktif ? (string)$penghuni['penyewaan_id'] : '',
+    'mulai_sewa' => $modeEdit ? '' : '1',
+    'kamar_id' => '',
+    'tanggal_masuk' => tanggal_hari_ini(),
+    'harga_sewa_disepakati' => '',
+    'hari_jatuh_tempo' => '',
 ];
-
-/*
- * PROTOTYPE UI: data yang dikirim diperiksa, tetapi TIDAK disimpan ke mana pun.
- * Nanti (backend): validasi CSRF, INSERT/UPDATE tabel penghuni, buat akun login
- * dengan password_hash(), ubah status kamar, semuanya dalam satu transaksi.
- */
-$metode    = $_SERVER['REQUEST_METHOD'] ?? 'GET';
-$csrfValid = $metode !== 'POST' || csrf_valid($_POST['csrf_token'] ?? null);
-$dikirim   = $metode === 'POST' && $csrfValid;
-$galat     = [];
-
-if ($dikirim) {
-    foreach (array_keys($nilai) as $kunci) {
-        $nilai[$kunci] = trim((string) ($_POST[$kunci] ?? ''));
+$galat = [];
+if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && (!$modeEdit || $penghuni)) {
+    foreach ($nilai as $key => $awal) {
+        $nilai[$key] = is_string($_POST[$key] ?? null) ? trim($_POST[$key]) : '';
     }
-    if (!in_array($nilai['status'], ['aktif', 'tidak_aktif'], true)) {
-        $nilai['status'] = 'aktif';
-    }
-
-    if ($nilai['nama'] === '' || mb_strlen($nilai['nama']) > 100) {
-        $galat[] = 'Nama lengkap wajib diisi (maksimal 100 karakter).';
-    }
-    if (!preg_match('/^[0-9+\-\s]{8,20}$/', $nilai['no_telepon'])) {
-        $galat[] = 'Nomor telepon hanya boleh berisi angka, spasi, + atau -, 8 sampai 20 karakter.';
-    }
-    if (!filter_var($nilai['akun'], FILTER_VALIDATE_EMAIL) && !preg_match('/^[A-Za-z0-9._]{3,30}$/', $nilai['akun'])) {
-        $galat[] = 'Isi email yang valid atau username 3-30 karakter (huruf, angka, titik, garis bawah).';
-    }
-    $kamarDipilih = ctype_digit($nilai['kamar_id']) ? get_kamar_by_id((int) $nilai['kamar_id']) : null;
-    if ($kamarDipilih === null) {
-        $galat[] = 'Pilih nomor kamar.';
-    } elseif ($nilai['status'] === 'aktif') {
-        $alasan = alasan_kamar_tidak_tersedia($kamarDipilih['id'], $idPenghuni);
-        if ($alasan !== null) {
-            $galat[] = 'Kamar ' . $kamarDipilih['nomor'] . ' tidak bisa dipilih untuk penyewaan aktif (' . $alasan . '). Satu kamar hanya boleh memiliki satu penyewaan aktif.';
+    if (!csrf_valid(is_string($_POST['csrf_token'] ?? null) ? $_POST['csrf_token'] : null)) {
+        http_response_code(403);
+        $galat[] = 'Sesi formulir sudah tidak valid. Muat ulang halaman.';
+    } else {
+        try {
+            $idDisimpan = simpan_penghuni($idPenghuni, $nilai, is_string($_POST['password'] ?? null) ? $_POST['password'] : '', pengguna_login()['id']);
+            $_SESSION['pesan_penghuni'] = 'Data penghuni berhasil disimpan.';
+            header('Location: penghuni-detail.php?id=' . $idDisimpan, true, 303);
+            exit;
+        } catch (DomainException $e) {
+            $galat[] = $e->getMessage();
+        } catch (PDOException $e) {
+            $galat[] = 'Penyimpanan gagal. Muat ulang formulir dan coba lagi.';
         }
-    }
-    if (format_tanggal($nilai['tanggal_masuk']) === '-') {
-        $galat[] = 'Tanggal mulai sewa tidak valid.';
     }
 }
 
@@ -92,7 +76,7 @@ require __DIR__ . '/includes/header.php';
         <p><?= $modeEdit ? 'Ubah data ' . e($penghuni['nama']) . '.' : 'Daftarkan penghuni baru secara manual.' ?></p>
     </div>
 
-    <?php if ($dikirim && $galat): ?>
+    <?php if ($galat): ?>
         <div class="notice notice--galat" role="alert">
             <strong>Data belum disimpan. Periksa kembali isian berikut:</strong>
             <ul>
@@ -101,18 +85,11 @@ require __DIR__ . '/includes/header.php';
                 <?php endforeach; ?>
             </ul>
         </div>
-    <?php elseif ($dikirim): ?>
-        <p class="notice notice--peringatan" role="status">
-            <strong>Isian valid, tetapi data belum disimpan.</strong> Penyimpanan data penghuni akan aktif setelah integrasi backend.
-        </p>
-    <?php elseif ($metode === 'POST' && !$csrfValid): ?>
-        <p class="notice notice--galat" role="alert">Sesi formulir sudah tidak valid. Muat ulang halaman ini dan coba lagi.</p>
-    <?php else: ?>
-        <p class="notice">Form ini masih prototype tampilan. Penyimpanan data akan aktif setelah integrasi backend.</p>
     <?php endif; ?>
 
-    <form method="post" action="<?= e($aksiForm) ?>" class="panel form-panel" data-form-penghuni>
+    <form method="post" action="<?= e($aksiForm) ?>" class="panel form-panel">
         <?= csrf_field() ?>
+        <input type="hidden" name="sewa_aktif" value="<?= e($nilai['sewa_aktif']) ?>">
         <div class="form-grid form-grid--2">
             <div class="form-group">
                 <label for="nama">Nama Lengkap</label>
@@ -123,58 +100,63 @@ require __DIR__ . '/includes/header.php';
             <div class="form-group">
                 <label for="no_telepon">Nomor Telepon</label>
                 <input type="tel" id="no_telepon" name="no_telepon" class="form-control" required
-                       pattern="[0-9+\-\s]{8,20}" inputmode="tel" autocomplete="off"
+                       maxlength="20" inputmode="tel" autocomplete="off"
                        value="<?= e($nilai['no_telepon']) ?>" placeholder="Contoh: 08xx-xxxx-xxxx">
             </div>
 
             <div class="form-group">
                 <label for="akun">Email atau Username</label>
-                <input type="text" id="akun" name="akun" class="form-control" required autocomplete="off"
+                <input type="text" id="akun" name="akun" class="form-control" maxlength="50" <?= !$modeEdit || $penghuni['user_id'] ? 'required' : '' ?> autocomplete="off"
                        aria-describedby="akun-hint" value="<?= e($nilai['akun']) ?>">
                 <span id="akun-hint" class="teks-catatan">Dipakai penghuni untuk login.</span>
             </div>
 
             <div class="form-group">
-                <label for="kamar_id">Nomor Kamar</label>
-                <select id="kamar_id" name="kamar_id" class="form-control" required aria-describedby="kamar-hint">
-                    <option value="">Pilih kamar</option>
-                    <?php foreach (get_semua_kamar() as $k): ?>
-                        <?php
-                        $alasan     = alasan_kamar_tidak_tersedia($k['id'], $idPenghuni);
-                        $milikSendiri = $penghuni && $penghuni['kamar_id'] === $k['id'];
-                        $keterangan = $alasan !== null ? 'terisi, ' . $alasan : ($milikSendiri ? 'kamar saat ini' : 'kosong');
-                        $nonaktif   = $alasan !== null && $nilai['status'] === 'aktif';
-                        ?>
-                        <option value="<?= (int) $k['id'] ?>"
-                                <?= $alasan !== null ? 'data-terisi' : '' ?>
-                                <?= $nilai['kamar_id'] === (string) $k['id'] ? 'selected' : '' ?>
-                                <?= $nonaktif ? 'disabled' : '' ?>>
-                            Kamar <?= e($k['nomor']) ?> (<?= e($keterangan) ?>)
-                        </option>
-                    <?php endforeach; ?>
-                </select>
-                <span id="kamar-hint" class="teks-catatan">Kamar yang sudah terisi tidak dapat dipilih untuk penyewaan aktif.</span>
-            </div>
-
-            <div class="form-group">
-                <label for="tanggal_masuk">Tanggal Mulai Sewa</label>
-                <input type="date" id="tanggal_masuk" name="tanggal_masuk" class="form-control" required
-                       value="<?= e($nilai['tanggal_masuk']) ?>">
-            </div>
-
-            <div class="form-group">
-                <label for="status">Status</label>
-                <select id="status" name="status" class="form-control">
-                    <option value="aktif"<?= $nilai['status'] === 'aktif' ? ' selected' : '' ?>>Aktif</option>
-                    <option value="tidak_aktif"<?= $nilai['status'] === 'tidak_aktif' ? ' selected' : '' ?>>Tidak Aktif</option>
-                </select>
+                <label for="password"><?= $penghuni && $penghuni['user_id'] ? 'Password baru (opsional)' : 'Password akun penghuni' ?></label>
+                <input type="password" name="password" id="password" class="form-control" autocomplete="new-password"
+                       minlength="8" <?= $modeEdit ? '' : 'required' ?>>
+                <span class="teks-catatan">Isi saat membuat akun atau mengganti password.</span>
             </div>
         </div>
-
-        <p class="form-info">
-            Akun login penghuni dibuat oleh admin melalui backend. Password tidak ditampilkan
-            dan tidak disimpan di halaman ini.
-        </p>
+        <?php if ($aktif): ?>
+            <p class="form-info">Kamar <?= e($penghuni['nomor']) ?> sejak <?= e(format_tanggal($penghuni['tanggal_masuk'])) ?>.
+                Untuk pindah kamar atau memulai perjanjian baru, akhiri sewa saat ini melalui Data Penghuni.</p>
+        <?php else: ?>
+            <?php if ($modeEdit): ?>
+                <label><input type="checkbox" name="mulai_sewa" value="1" <?= $nilai['mulai_sewa'] === '1' ? 'checked' : '' ?>>
+                    Mulai penyewaan baru untuk penghuni ini</label>
+                <p class="teks-catatan">Isi bagian sewa dan akun jika memulai penyewaan baru.</p>
+            <?php endif; ?>
+            <div class="form-grid form-grid--2">
+                <div class="form-group">
+                    <label for="kamar_id">Nomor Kamar</label>
+                    <select id="kamar_id" name="kamar_id" class="form-control" <?= $modeEdit ? '' : 'required' ?>>
+                        <option value="">Pilih kamar</option>
+                        <?php foreach (get_semua_kamar() as $k): ?>
+                            <option value="<?= (int)$k['id'] ?>" <?= $k['status'] === 'terisi' ? 'disabled' : '' ?>
+                                <?= $nilai['kamar_id'] === (string)$k['id'] ? 'selected' : '' ?>>
+                                Kamar <?= e($k['nomor']) ?> (<?= e(label_status($k['status'])) ?>)
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="tanggal_masuk">Tanggal Mulai Sewa</label>
+                    <input type="date" id="tanggal_masuk" name="tanggal_masuk" class="form-control"
+                           max="<?= e(tanggal_hari_ini()) ?>" value="<?= e($nilai['tanggal_masuk']) ?>" <?= $modeEdit ? '' : 'required' ?>>
+                </div>
+                <div class="form-group">
+                    <label for="harga">Harga Sewa Disepakati per Bulan (Rp)</label>
+                    <input type="number" id="harga" name="harga_sewa_disepakati" class="form-control" min="0" max="9999999999.99" step="0.01"
+                           value="<?= e($nilai['harga_sewa_disepakati']) ?>" <?= $modeEdit ? '' : 'required' ?>>
+                </div>
+                <div class="form-group">
+                    <label for="hari">Hari Jatuh Tempo Setiap Bulan</label>
+                    <input type="number" id="hari" name="hari_jatuh_tempo" class="form-control" min="1" max="31"
+                           value="<?= e($nilai['hari_jatuh_tempo']) ?>" <?= $modeEdit ? '' : 'required' ?>>
+                </div>
+            </div>
+        <?php endif; ?>
 
         <div class="form-aksi">
             <button type="submit" class="btn btn-primary">Simpan</button>

@@ -9,19 +9,12 @@
  * Variabel yang diatur sebelum include:
  *   $judulHalaman  string  Judul halaman (tab browser & topbar)
  *   $menuAktif     string  dashboard | kamar | tagihan | riwayat | notifikasi | profil
- *
- * Catatan: belum ada autentikasi. $penghuniLogin di bawah masih dummy
- * (lihat get_penghuni_login() di data/penghuni.php), nanti diambil dari
- * session setelah login penghuni dibuat.
  */
 require_once __DIR__ . '/../../data/penghuni.php';
 
 $judulHalaman  = $judulHalaman ?? 'Dashboard';
 $menuAktif     = $menuAktif ?? '';
 $penghuniLogin = get_penghuni_login();
-// Nama di topbar mengikuti akun yang BENAR-BENAR login (sesi). Konten
-// dashboard di bawahnya masih memakai $penghuniLogin (data contoh) --
-// lihat docs/07-login-dan-keamanan.md untuk batas integrasi tahap ini.
 $namaPenghuni  = pengguna_login()['nama'] ?? ($penghuniLogin['nama'] ?? 'Penghuni');
 
 $menuPenghuni = [

@@ -10,9 +10,10 @@ function e(mixed $value): string
 }
 
 /** Format angka menjadi Rupiah, contoh: 650000 -> "Rp 650.000". */
-function format_rupiah(int $angka): string
+function format_rupiah(int|float|string $angka): string
 {
-    return 'Rp ' . number_format($angka, 0, ',', '.');
+    $nominal = (float)$angka;
+    return 'Rp ' . number_format($nominal, floor($nominal) === $nominal ? 0 : 2, ',', '.');
 }
 
 /**

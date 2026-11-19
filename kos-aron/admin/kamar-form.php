@@ -84,18 +84,24 @@ if ($dikirim) {
             $dataSimpan['foto_utama'] = $unggahan['nama_file'];
         }
 
-        if ($modeEdit && $kamar !== null) {
-            perbarui_kamar($kamar['id'], $dataSimpan);
-            if ($unggahan['ada_file'] && $unggahan['nama_file'] !== null) {
-                hapus_foto_lama($kamar['foto'], PATH_FOTO_KAMAR);
+        try {
+            if ($modeEdit && $kamar !== null) {
+                perbarui_kamar($kamar['id'], $dataSimpan);
+                if ($unggahan['ada_file'] && $unggahan['nama_file'] !== null) {
+                    hapus_foto_lama($kamar['foto'], PATH_FOTO_KAMAR);
+                }
+            } else {
+                $dataSimpan['foto_utama'] = $unggahan['nama_file'] ?? null;
+                tambah_kamar($dataSimpan);
             }
-        } else {
-            $dataSimpan['foto_utama'] = $unggahan['nama_file'] ?? null;
-            tambah_kamar($dataSimpan);
-        }
 
-        header('Location: kamar.php?disimpan=1');
-        exit;
+            header('Location: kamar.php?disimpan=1');
+            exit;
+        } catch (DomainException $e) {
+            $galat[] = $e->getMessage();
+        } catch (PDOException $e) {
+            $galat[] = 'Kamar gagal disimpan. Periksa nomor kamar dan coba lagi.';
+        }
     }
 
     // Gagal validasi: hapus foto yang SUDAH terunggah ke disk (tidak jadi dipakai)

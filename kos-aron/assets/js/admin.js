@@ -144,30 +144,6 @@
     }
 
     /* ------------------------------------------------------
-       Form penghuni: satu kamar = satu penyewaan aktif.
-       Saat status "Aktif", kamar yang sudah terisi (option[data-terisi])
-       tidak bisa dipilih. Server tetap memeriksa aturan yang sama.
-       ------------------------------------------------------ */
-    function initFormPenghuni() {
-        var form = document.querySelector('[data-form-penghuni]');
-        if (!form) return;
-
-        var status = form.elements.status;
-        var kamar = form.elements.kamar_id;
-
-        function sesuaikan() {
-            var aktif = status.value === 'aktif';
-            Array.prototype.forEach.call(kamar.options, function (opt) {
-                if (opt.hasAttribute('data-terisi')) opt.disabled = aktif;
-            });
-            if (kamar.selectedOptions.length && kamar.selectedOptions[0].disabled) kamar.value = '';
-        }
-
-        status.addEventListener('change', sesuaikan);
-        sesuaikan();
-    }
-
-    /* ------------------------------------------------------
        Perlengkapan dasar untuk <dialog> yang dipakai sebagai modal:
        tombol [data-tutup-modal], klik di latar gelap, dan Escape (event
        "cancel" bawaan dialog) semuanya menutup dialog + membersihkan
@@ -190,92 +166,12 @@
         return tutup;
     }
 
-    /* ------------------------------------------------------
-       Modal Buat / Edit Tagihan (<dialog>).
-       Tanpa JavaScript, tautan ?form=baru / ?edit=ID membuka form lewat server.
-       ------------------------------------------------------ */
     function initModalTagihan() {
         var dialog = document.getElementById('modal-tagihan');
         if (!dialog || typeof dialog.showModal !== 'function') return;
-
-        var form = dialog.querySelector('[data-form-tagihan]');
-        var judul = dialog.querySelector('[data-judul-modal]');
-        var el = form.elements;
-        var peringatan = form.querySelector('[data-peringatan-ganda]');
-        var tagihanAda = JSON.parse(form.getAttribute('data-tagihan-ada') || '[]');
-        var nominalOtomatis = '';
-
-        function hapusHasilLama() {
-            Array.prototype.forEach.call(dialog.querySelectorAll('[data-hasil-form]'), function (n) { n.remove(); });
-        }
-
-        function isi(data) {
-            ['id', 'penghuni_id', 'periode', 'jumlah', 'jatuh_tempo', 'keterangan'].forEach(function (k) {
-                el[k].value = data[k] !== undefined && data[k] !== null ? String(data[k]) : '';
-            });
-            nominalOtomatis = '';
-            perbaruiKamar(false);
-            cekGanda();
-        }
-
-        function buka(mode, data) {
-            hapusHasilLama();
-            judul.textContent = mode === 'edit' ? 'Edit Tagihan' : 'Buat Tagihan';
-            isi(data || {});
-            dialog.showModal();
-            el.penghuni_id.focus();
-        }
-
-        var tutup = initDialogDasar(dialog);
-
-        // Nomor kamar (dan nominal bila belum diisi) mengikuti penghuni yang dipilih.
-        function perbaruiKamar(isiNominal) {
-            var opt = el.penghuni_id.selectedOptions[0];
-            var kamar = opt && opt.value ? opt.getAttribute('data-kamar') : '';
-            el.nomor_kamar.value = kamar ? 'Kamar ' + kamar : '';
-            if (isiNominal && opt && opt.value && (el.jumlah.value === '' || el.jumlah.value === nominalOtomatis)) {
-                el.jumlah.value = opt.getAttribute('data-harga');
-                nominalOtomatis = el.jumlah.value;
-            }
-        }
-
-        // Aturan: satu penghuni hanya satu tagihan per periode.
-        function cekGanda() {
-            var pesan = '';
-            if (el.penghuni_id.value && el.periode.value) {
-                var ganda = tagihanAda.some(function (s) {
-                    var b = s.split('|');
-                    return b[0] === el.penghuni_id.value && b[1] === el.periode.value && b[2] !== el.id.value;
-                });
-                if (ganda) pesan = 'Penghuni ini sudah memiliki tagihan untuk periode tersebut.';
-            }
-            el.periode.setCustomValidity(pesan);
-            peringatan.textContent = pesan;
-            peringatan.hidden = pesan === '';
-        }
-
-        var tombolBuat = document.querySelector('[data-buka-tagihan]');
-        if (tombolBuat) {
-            tombolBuat.addEventListener('click', function (e) { e.preventDefault(); buka('baru'); });
-        }
-        Array.prototype.forEach.call(document.querySelectorAll('[data-edit-tagihan]'), function (a) {
-            a.addEventListener('click', function (e) {
-                e.preventDefault();
-                buka('edit', JSON.parse(a.getAttribute('data-edit-tagihan')));
-            });
-        });
-
-        el.penghuni_id.addEventListener('change', function () { perbaruiKamar(true); cekGanda(); });
-        el.periode.addEventListener('input', cekGanda);
-        el.periode.addEventListener('change', cekGanda);
-
-        // Halaman dimuat dengan form terbuka (hasil kirim / tautan tanpa JS): jadikan modal.
-        if (dialog.hasAttribute('data-buka-otomatis')) {
-            dialog.close();
-            dialog.showModal();
-            perbaruiKamar(false);
-            cekGanda();
-        }
+        initDialogDasar(dialog);
+        dialog.close();
+        dialog.showModal();
     }
 
     /* ------------------------------------------------------
@@ -481,7 +377,6 @@
         initFilterTabel();
         initKonfirmasi();
         initFallbackGambar();
-        initFormPenghuni();
         initModalTagihan();
         initModalPembayaran();
         initModalDetailPembayaran();

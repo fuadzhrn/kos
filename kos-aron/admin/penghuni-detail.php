@@ -11,7 +11,9 @@ if ($penghuni === null) {
     http_response_code(404);
 }
 
-$kamar   = $penghuni ? get_kamar_by_id($penghuni['kamar_id']) : null;
+$riwayat = $penghuni ? riwayat_sewa_penghuni($id) : [];
+$pesan = $_SESSION['pesan_penghuni'] ?? null;
+unset($_SESSION['pesan_penghuni']);
 $tagihan = $penghuni ? get_tagihan_by_penghuni($penghuni['id']) : [];
 
 $judulHalaman = $penghuni ? 'Detail Penghuni' : 'Penghuni Tidak Ditemukan';
@@ -19,6 +21,7 @@ $judulHalaman = $penghuni ? 'Detail Penghuni' : 'Penghuni Tidak Ditemukan';
 require __DIR__ . '/includes/header.php';
 ?>
 
+<?php if ($pesan): ?><p class="notice" role="status"><?= e($pesan) ?></p><?php endif; ?>
 <nav aria-label="Breadcrumb">
     <ol class="breadcrumb">
         <li><a href="penghuni.php">Data Penghuni</a></li>
@@ -54,8 +57,8 @@ require __DIR__ . '/includes/header.php';
             <div>
                 <dt>Kamar</dt>
                 <dd>
-                    <?php if ($kamar): ?>
-                        Kamar <?= e($kamar['nomor']) ?> (<?= e(format_rupiah($kamar['harga'])) ?> / bulan)
+                    <?php if ($penghuni['kamar_id']): ?>
+                        Kamar <?= e($penghuni['nomor']) ?> (<?= e(format_rupiah($penghuni['harga_sewa_disepakati'])) ?> / bulan)
                     <?php else: ?>
                         -
                     <?php endif; ?>
@@ -67,6 +70,22 @@ require __DIR__ . '/includes/header.php';
             <?php endif; ?>
             <div><dt>Status</dt><dd><?= e(label_status_penghuni($penghuni['status'])) ?></dd></div>
         </dl>
+    </section>
+
+    <section class="panel">
+        <div class="panel__head"><h2>Riwayat Penyewaan</h2></div>
+        <?php if (!$riwayat): ?>
+            <p class="panel__kosong">Belum ada penyewaan.</p>
+        <?php else: ?>
+            <div class="tabel-wrap"><table class="tabel">
+                <thead><tr><th>Kamar</th><th>Tanggal masuk</th><th>Tanggal keluar</th><th>Harga per bulan</th><th>Hari jatuh tempo</th><th>Status</th></tr></thead>
+                <tbody><?php foreach ($riwayat as $sewa): ?>
+                    <tr><td><?= e($sewa['nomor']) ?></td><td><?= e(format_tanggal($sewa['tanggal_masuk'])) ?></td>
+                        <td><?= e(format_tanggal($sewa['tanggal_keluar'])) ?></td><td><?= e(format_rupiah($sewa['harga_sewa_disepakati'])) ?></td>
+                        <td><?= (int)$sewa['hari_jatuh_tempo'] ?></td><td><?= e(ucfirst($sewa['status'])) ?></td></tr>
+                <?php endforeach; ?></tbody>
+            </table></div>
+        <?php endif; ?>
     </section>
 
     <section class="panel">

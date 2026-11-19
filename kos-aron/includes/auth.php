@@ -166,6 +166,18 @@ function require_role(string $peranDibutuhkan, string $urlLogin = 'login.php'): 
         exit;
     }
 
+    if ($peranDibutuhkan === 'penghuni') {
+        require_once __DIR__ . '/koneksi.php';
+        $stmt = koneksi_database()->prepare("SELECT nama FROM users WHERE id = ? AND role = 'penghuni' AND status = 'aktif'");
+        $stmt->execute([$pengguna['id']]);
+        $nama = $stmt->fetchColumn();
+        if ($nama === false) {
+            logout_sesi();
+            header('Location: ' . $urlLogin . '?alasan=harus-login');
+            exit;
+        }
+        $_SESSION['user']['nama'] = $pengguna['nama'] = $nama;
+    }
     return $pengguna;
 }
 

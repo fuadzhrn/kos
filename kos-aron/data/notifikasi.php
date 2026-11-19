@@ -7,9 +7,7 @@
  * tanggal yang ditampilkan selalu konsisten dengan data tagihan yang
  * sebenarnya (tidak ada tanggal yang hardcode terpisah).
  *
- * Satu-satunya hal yang disimpan sebagai data CONTOH di sini adalah status
- * BACA/BELUM DIBACA setiap notifikasi, karena status itu murni riwayat
- * interaksi penghuni dan tidak bisa diturunkan dari data tagihan.
+ * Status baca mengikuti catatan notifikasi milik penghuni di database.
  *
  * BELUM ADA sistem pengingat otomatis, cron job, atau pengiriman WhatsApp/
  * email sungguhan. "Notifikasi" di halaman ini murni tampilan: artinya
@@ -40,18 +38,6 @@ function kunci_notifikasi(int $tagihanId, string $tipe): string
     return $tagihanId . '-' . $tipe;
 }
 
-/**
- * CONTOH status baca notifikasi (dummy). Kunci yang TIDAK terdaftar di
- * sini otomatis dianggap 'Belum Dibaca' (notifikasi baru/belum dibuka).
- */
-function data_status_baca_notifikasi(): array
-{
-    return [
-        kunci_notifikasi(1, 'lunas') => true, // Rizky, Oktober - lunas lama, sudah dibaca
-        kunci_notifikasi(2, 'lunas') => true, // Siti, Oktober - lunas lama, sudah dibaca
-        kunci_notifikasi(4, 'lunas') => true, // Rizky, November - lunas, sudah dibaca
-    ];
-}
 
 /** Berapa hari lagi menuju jatuh tempo (bisa negatif jika sudah lewat). */
 function sisa_hari_jatuh_tempo(string $jatuhTempo, ?string $hariIni = null): int
@@ -66,7 +52,6 @@ function sisa_hari_jatuh_tempo(string $jatuhTempo, ?string $hariIni = null): int
  */
 function buat_notifikasi_tagihan(array $tagihan): ?array
 {
-    $statusBaca = data_status_baca_notifikasi();
 
     if ($tagihan['status'] === 'lunas') {
         $tipe    = 'lunas';
@@ -91,6 +76,8 @@ function buat_notifikasi_tagihan(array $tagihan): ?array
     }
 
     $kunci = kunci_notifikasi($tagihan['id'], $tipe);
+    $stmt = koneksi_database()->prepare('SELECT dibaca FROM notifikasi WHERE penghuni_id = ? AND tagihan_id = ? AND tipe = ?');
+    $stmt->execute([$tagihan['penghuni_id'], $tagihan['id'], $tipe]);
 
     return [
         'kunci'   => $kunci,
@@ -98,7 +85,7 @@ function buat_notifikasi_tagihan(array $tagihan): ?array
         'judul'   => $judul,
         'pesan'   => $pesan,
         'tanggal' => $tanggal,
-        'dibaca'  => $statusBaca[$kunci] ?? false,
+        'dibaca'  => (bool)$stmt->fetchColumn(),
         'tagihan' => $tagihan,
     ];
 }
