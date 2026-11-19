@@ -201,6 +201,7 @@
             var ada = opt && opt.value;
             el.nama_penghuni_tampil.value = ada ? opt.getAttribute('data-nama') : '';
             el.nomor_kamar_tampil.value = ada ? 'Kamar ' + opt.getAttribute('data-kamar') : '';
+            el.periode_tampil.value = ada ? opt.getAttribute('data-periode') : '';
             el.nominal_tagihan_tampil.value = ada ? opt.getAttribute('data-nominal-tampil') : '';
             if (isiNominal && ada && (el.nominal_dibayar.value === '' || el.nominal_dibayar.value === nominalOtomatis)) {
                 el.nominal_dibayar.value = opt.getAttribute('data-nominal');
@@ -227,7 +228,7 @@
         function isi(data) {
             data = data || {};
             el.tagihan_id.value = data.tagihan_id || '';
-            el.tanggal_bayar.value = data.tanggal_bayar || '';
+            el.tanggal_bayar.value = data.tanggal_bayar || el.tanggal_bayar.max;
             el.nominal_dibayar.value = data.nominal_dibayar || '';
             Array.prototype.forEach.call(el.metode, function (r) { r.checked = r.value === (data.metode || 'tunai'); });
             el.keterangan.value = data.keterangan || '';

@@ -2,9 +2,10 @@
 require_once __DIR__ . '/penghuni.php';
 
 const SQL_RIWAYAT_TAGIHAN = 'SELECT t.*, s.penghuni_id, p.nama AS nama_penghuni, k.nomor AS nomor_kamar,
-    pb.tanggal_bayar FROM tagihan t JOIN penyewaan s ON s.id = t.penyewaan_id
+    CASE WHEN pb.nominal_dibayar = t.jumlah THEN pb.tanggal_bayar END AS tanggal_bayar,
+    pb.id AS pembayaran_sah_id FROM tagihan t JOIN penyewaan s ON s.id = t.penyewaan_id
     JOIN penghuni p ON p.id = s.penghuni_id JOIN kamar k ON k.id = s.kamar_id
-    LEFT JOIN pembayaran pb ON pb.tagihan_id = t.id AND pb.nominal_dibayar = t.jumlah';
+    LEFT JOIN pembayaran pb ON pb.tagihan_aktif_unik = t.id';
 
 function data_tagihan(): array
 {

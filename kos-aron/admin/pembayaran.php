@@ -1,91 +1,67 @@
 <?php
 require_once __DIR__ . '/../includes/config.php';
-require_role('admin', '../login.php');
-require_once __DIR__ . '/../data/tagihan.php'; // juga memuat data penghuni, kamar & pembayaran
+$admin = require_role('admin', '../login.php');
+require_once __DIR__ . '/../data/tagihan.php';
 
 $judulHalaman = 'Data Pembayaran';
-$menuAktif    = 'pembayaran';
-
-$daftarPembayaran  = get_semua_pembayaran();
-$totalPembayaran   = count($daftarPembayaran);
-$daftarPeriode     = daftar_periode_tagihan();
-$daftarMetode      = daftar_metode_pembayaran();
-$ringkasanBulan    = ringkasan_pembayaran_bulan_ini();
-$tagihanBelumLunas = get_tagihan_belum_lunas();
-
-/*
- * PENTING: pembayaran hanya DICATAT ADMIN. Penghuni membayar tunai atau
- * transfer LANGSUNG kepada pemilik di luar website; tidak ada upload bukti
- * bayar maupun tombol verifikasi dari penghuni di sini.
- *
- * PROTOTYPE UI: tidak ada penyimpanan nyata. Isian diperiksa sesuai aturan
- * rancangan, lalu dijawab dengan pesan "belum disimpan".
- * Nanti (backend) alurnya:
- *   1. Admin mencatat pembayaran.
- *   2. Sistem memvalidasi (tagihan belum lunas, nominal sama persis, dsb).
- *   3. Pembayaran disimpan (INSERT ke tabel pembayaran, dalam transaksi).
- *   4. Status tagihan terkait otomatis menjadi Lunas (dihitung dari JOIN).
- *   5. Riwayat pembayaran diperbarui (muncul di tabel ini).
- */
-$metodeHttp = $_SERVER['REQUEST_METHOD'] ?? 'GET';
-$csrfValid  = $metodeHttp !== 'POST' || csrf_valid($_POST['csrf_token'] ?? null);
-$dikirim    = $metodeHttp === 'POST' && $csrfValid && ($_POST['aksi'] ?? '') === 'simpan';
-$modalBuka  = false;
-
-$nilaiKosong = ['tagihan_id' => '', 'tanggal_bayar' => '', 'nominal_dibayar' => '', 'metode' => 'tunai', 'keterangan' => ''];
-$nilaiForm   = $nilaiKosong;
-$galat       = [];
-
-if ($dikirim) {
-    $modalBuka = true;
-    foreach (array_keys($nilaiKosong) as $kunci) {
-        $nilaiForm[$kunci] = trim((string) ($_POST[$kunci] ?? ''));
+$menuAktif = 'pembayaran';
+$detailId = filter_input(INPUT_GET, 'lihat', FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
+$modalBuka = isset($_GET['form']);
+$nilaiForm = ['tagihan_id' => '', 'tanggal_bayar' => tanggal_hari_ini(), 'nominal_dibayar' => '', 'metode' => 'tunai',
+    'keterangan' => '', 'alasan' => '', 'pembayaran_id' => '', 'versi' => ''];
+$galat = [];
+$aksi = null;
+$pesan = $_SESSION['pesan_pembayaran'] ?? null;
+unset($_SESSION['pesan_pembayaran']);
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $aksi = is_string($_POST['aksi'] ?? null) ? $_POST['aksi'] : '';
+    $modalBuka = $aksi === 'simpan';
+    foreach ($nilaiForm as $kunci => $awal) {
+        $nilaiForm[$kunci] = is_string($_POST[$kunci] ?? null) ? trim($_POST[$kunci]) : '';
     }
-
-    $tagihanId = ctype_digit($nilaiForm['tagihan_id']) ? (int) $nilaiForm['tagihan_id'] : null;
-    $tagihan   = $tagihanId ? get_tagihan_by_id($tagihanId) : null;
-
-    if ($tagihan === null) {
-        $galat[] = 'Pilih tagihan yang akan dibayar.';
-    } elseif ($tagihan['status'] === 'lunas') {
-        $galat[] = 'Tagihan ' . $tagihan['nama_penghuni'] . ' periode ' . format_periode($tagihan['periode'])
-                 . ' sudah lunas. Satu tagihan hanya boleh memiliki satu pembayaran.';
+    if (!$modalBuka) {
+        $detailId = filter_input(INPUT_POST, 'pembayaran_id', FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
     }
-
-    if (format_tanggal($nilaiForm['tanggal_bayar']) === '-') {
-        $galat[] = 'Tanggal pembayaran tidak valid.';
-    } elseif ($nilaiForm['tanggal_bayar'] > tanggal_hari_ini()) {
-        $galat[] = 'Tanggal pembayaran tidak boleh di masa depan.';
+    try {
+        if (!csrf_valid(is_string($_POST['csrf_token'] ?? null) ? $_POST['csrf_token'] : null)) {
+            http_response_code(403);
+            throw new DomainException('Sesi formulir tidak valid. Muat ulang halaman.');
+        }
+        $formId = is_string($_POST['form_id'] ?? null) ? $_POST['form_id'] : '';
+        if ($aksi === 'simpan' && !isset($_SESSION['form_bayar'][$formId])) {
+            throw new DomainException('Form sudah diproses atau kedaluwarsa. Periksa riwayat dan buka form baru.');
+        }
+        $id = proses_pembayaran($aksi, $admin['id'], $nilaiForm);
+        unset($_SESSION['form_bayar'][$formId]);
+        $_SESSION['pesan_pembayaran'] = match ($aksi) {
+            'simpan' => 'Pembayaran tersimpan dan tagihan lunas.',
+            'koreksi' => 'Koreksi pembayaran dan catatan audit tersimpan.',
+            'batal' => 'Pembayaran dibatalkan. Status tagihan telah dihitung kembali.',
+        };
+        header('Location: pembayaran.php?lihat=' . $id . '#modal-detail-pembayaran', true, 303);
+        exit;
+    } catch (DomainException $e) {
+        $galat[] = $e->getMessage();
+    } catch (PDOException $e) {
+        error_log('Gagal memproses pembayaran. SQLSTATE ' . $e->getCode());
+        $galat[] = 'Pembayaran gagal diproses. Periksa riwayat sebelum mencoba lagi.';
     }
-
-    if (!ctype_digit($nilaiForm['nominal_dibayar']) || (int) $nilaiForm['nominal_dibayar'] < 1) {
-        $galat[] = 'Nominal dibayar harus berupa angka lebih dari 0.';
-    } elseif ($tagihan !== null && (int) $nilaiForm['nominal_dibayar'] !== $tagihan['jumlah']) {
-        $galat[] = 'Nominal dibayar (' . format_rupiah((int) $nilaiForm['nominal_dibayar']) . ') harus sama persis dengan nominal tagihan ('
-                 . format_rupiah($tagihan['jumlah']) . '). Pembayaran cicilan belum didukung pada versi ini.';
-    }
-
-    if (!array_key_exists($nilaiForm['metode'], $daftarMetode)) {
-        $galat[] = 'Pilih metode pembayaran.';
-    }
-    if (mb_strlen($nilaiForm['keterangan']) > 255) {
-        $galat[] = 'Keterangan maksimal 255 karakter.';
-    }
-} elseif (isset($_GET['form'])) {
-    // Tanpa JavaScript: tautan ?form=baru membuka form lewat server.
-    $modalBuka = true;
 }
+$formId = bin2hex(random_bytes(16));
+$_SESSION['form_bayar'][$formId] = true;
+$_SESSION['form_bayar'] = array_slice($_SESSION['form_bayar'], -20, null, true);
 
-// Tagihan yang sedang ditampilkan pada field Nama Penghuni/Nomor Kamar/Nominal Tagihan (readonly).
-$tagihanTampil = null;
-if ($nilaiForm['tagihan_id'] !== '' && ctype_digit($nilaiForm['tagihan_id'])) {
-    $tagihanTampil = get_tagihan_by_id((int) $nilaiForm['tagihan_id']);
-}
-
-// Detail pembayaran (hanya tampilan), dibuka lewat ?lihat=ID.
-$detailId         = filter_input(INPUT_GET, 'lihat', FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
-$detailPembayaran = $detailId ? get_pembayaran_by_id($detailId) : null;
-$detailBuka       = $detailId !== null && $detailId !== false;
+$daftarPembayaran = get_semua_pembayaran(true);
+$totalPembayaran = count($daftarPembayaran);
+$daftarPeriode = daftar_periode_tagihan();
+$daftarMetode = daftar_metode_pembayaran();
+$ringkasanBulan = ringkasan_pembayaran_bulan_ini();
+$tagihanBelumLunas = array_filter(get_tagihan_belum_lunas(),
+    fn ($t) => $t['pembayaran_sah_id'] === null && $t['jumlah'] !== '0.00');
+$tagihanTampil = $modalBuka && ctype_digit($nilaiForm['tagihan_id']) ? get_tagihan_by_id((int)$nilaiForm['tagihan_id']) : null;
+$detailPembayaran = $detailId ? get_pembayaran_by_id($detailId, true) : null;
+$detailBuka = (bool)$detailId;
+$audit = $detailPembayaran ? audit_pembayaran($detailId) : [];
 
 require __DIR__ . '/includes/header.php';
 ?>
@@ -97,6 +73,9 @@ require __DIR__ . '/includes/header.php';
     </div>
     <a href="pembayaran.php?form=baru#modal-pembayaran" class="btn btn-primary" data-buka-pembayaran>Catat Pembayaran</a>
 </div>
+
+<?php if ($pesan && !$detailBuka): ?><p class="notice" role="status"><?= e($pesan) ?></p><?php endif; ?>
+<?php if ($galat && !$modalBuka && !$detailBuka): ?><p class="notice notice--galat" role="alert"><?= e($galat[0]) ?></p><?php endif; ?>
 
 <div class="ringkasan-bulan">
     <div class="stat-card">
@@ -150,6 +129,7 @@ require __DIR__ . '/includes/header.php';
                         <th scope="col">Periode Tagihan</th>
                         <th scope="col" class="tabel__angka">Nominal Pembayaran</th>
                         <th scope="col">Metode</th>
+                        <th scope="col">Admin Pencatat</th>
                         <th scope="col">Aksi</th>
                     </tr>
                 </thead>
@@ -157,16 +137,6 @@ require __DIR__ . '/includes/header.php';
                     <?php foreach ($daftarPembayaran as $i => $p): ?>
                         <?php
                         $label    = $p['nama_penghuni'] . ' ' . format_periode($p['periode_tagihan']);
-                        $dataLihat = json_encode([
-                            'nama_penghuni'          => $p['nama_penghuni'],
-                            'nomor_kamar'             => $p['nomor_kamar'],
-                            'periode_tampil'          => format_periode($p['periode_tagihan']),
-                            'tanggal_tampil'          => format_tanggal($p['tanggal_bayar']),
-                            'nominal_tagihan_tampil'  => format_rupiah($p['jumlah_tagihan']),
-                            'nominal_dibayar_tampil'  => format_rupiah($p['nominal_dibayar']),
-                            'metode_tampil'           => label_metode_pembayaran($p['metode']),
-                            'keterangan'              => $p['keterangan'],
-                        ], JSON_UNESCAPED_UNICODE);
                         ?>
                         <tr data-baris data-periode="<?= e($p['periode_tagihan']) ?>" data-metode="<?= e($p['metode']) ?>">
                             <td class="tabel__no"><?= $i + 1 ?></td>
@@ -174,16 +144,19 @@ require __DIR__ . '/includes/header.php';
                             <td class="tabel__utama"><?= e($p['nama_penghuni']) ?></td>
                             <td>Kamar <?= e($p['nomor_kamar']) ?></td>
                             <td><?= e(format_periode($p['periode_tagihan'])) ?></td>
-                            <td class="tabel__angka"><?= e(format_rupiah($p['nominal_dibayar'])) ?></td>
+                            <td class="tabel__angka"><?= e(format_rupiah($p['nominal_dibayar'])) ?>
+                                <?php if ($p['status'] === 'dibatalkan'): ?><span class="tabel__sub">Dibatalkan</span><?php endif; ?>
+                            </td>
                             <td><?= e(label_metode_pembayaran($p['metode'])) ?></td>
+                            <td><?= e($p['admin_pencatat']) ?></td>
                             <td>
                                 <a href="pembayaran.php?lihat=<?= (int) $p['id'] ?>#modal-detail-pembayaran" class="btn btn-outline btn-sm"
-                                   data-lihat-pembayaran="<?= e($dataLihat) ?>" aria-label="Detail pembayaran <?= e($label) ?>">Detail</a>
+                                   aria-label="Detail pembayaran <?= e($label) ?>">Detail</a>
                             </td>
                         </tr>
                     <?php endforeach; ?>
                     <tr class="tabel__kosong" data-filter-kosong hidden>
-                        <td colspan="8">Tidak ada pembayaran yang sesuai dengan filter.</td>
+                        <td colspan="9">Tidak ada pembayaran yang sesuai dengan filter.</td>
                     </tr>
                 </tbody>
             </table>
@@ -193,8 +166,7 @@ require __DIR__ . '/includes/header.php';
 
 <p class="teks-catatan">
     Pembayaran dicatat admin setelah penghuni membayar tunai atau transfer langsung kepada pemilik, di luar website.
-    Nominal dibayar harus sama persis dengan nominal tagihan (belum mendukung cicilan). Setelah integrasi backend,
-    mencatat pembayaran akan otomatis mengubah status tagihan terkait menjadi Lunas.
+    Transaksi yang dibatalkan tetap tercantum dalam riwayat admin dan dikecualikan dari total penerimaan.
 </p>
 
 <!-- Modal Catat Pembayaran -->
@@ -206,7 +178,7 @@ require __DIR__ . '/includes/header.php';
         </div>
 
         <div class="modal__body">
-            <?php if ($dikirim && $galat): ?>
+            <?php if ($modalBuka && $galat): ?>
                 <div class="notice notice--galat" role="alert" data-hasil-form>
                     <strong>Pembayaran belum disimpan. Periksa kembali isian berikut:</strong>
                     <ul>
@@ -215,14 +187,10 @@ require __DIR__ . '/includes/header.php';
                         <?php endforeach; ?>
                     </ul>
                 </div>
-            <?php elseif ($dikirim): ?>
-                <p class="notice notice--peringatan" role="status" data-hasil-form>
-                    <strong>Isian valid, tetapi pembayaran belum disimpan.</strong> Pencatatan pembayaran akan aktif setelah integrasi backend.
-                </p>
             <?php endif; ?>
-            <p class="teks-catatan modal__info">Form prototype: tidak ada pembayaran yang benar-benar dicatat, dan tidak ada status tagihan yang berubah.</p>
 
             <?= csrf_field() ?>
+            <input type="hidden" name="form_id" value="<?= e($formId) ?>">
             <input type="hidden" name="aksi" value="simpan">
 
             <div class="form-grid form-grid--2">
@@ -234,11 +202,12 @@ require __DIR__ . '/includes/header.php';
                             <option value="<?= (int) $t['id'] ?>"
                                 data-nama="<?= e($t['nama_penghuni']) ?>"
                                 data-kamar="<?= e($t['nomor_kamar']) ?>"
-                                data-nominal="<?= (int) $t['jumlah'] ?>"
+                                data-nominal="<?= e($t['jumlah']) ?>"
+                                data-periode="<?= e(format_periode($t['periode'])) ?>"
                                 data-nominal-tampil="<?= e(format_rupiah($t['jumlah'])) ?>"
                                 <?= $nilaiForm['tagihan_id'] === (string) $t['id'] ? 'selected' : '' ?>>
                                 <?= e($t['nama_penghuni']) ?> &mdash; Kamar <?= e($t['nomor_kamar']) ?> &mdash; <?= e(format_periode($t['periode'])) ?>
-                                (<?= e(label_status_tagihan($t['status'])) ?>)
+                                (<?= e(format_rupiah($t['jumlah'])) ?> · <?= e(label_status_tagihan($t['status'])) ?>)
                             </option>
                         <?php endforeach; ?>
                     </select>
@@ -260,6 +229,11 @@ require __DIR__ . '/includes/header.php';
                 </div>
 
                 <div class="form-group">
+                    <label for="periode_tampil">Periode Tagihan</label>
+                    <input id="periode_tampil" class="form-control" readonly tabindex="-1"
+                           value="<?= $tagihanTampil ? e(format_periode($tagihanTampil['periode'])) : '' ?>" placeholder="Terisi otomatis">
+                </div>
+                <div class="form-group">
                     <label for="nominal_tagihan_tampil">Nominal Tagihan</label>
                     <input type="text" id="nominal_tagihan_tampil" class="form-control" readonly tabindex="-1"
                            value="<?= $tagihanTampil ? e(format_rupiah($tagihanTampil['jumlah'])) : '' ?>" placeholder="Terisi otomatis">
@@ -273,8 +247,8 @@ require __DIR__ . '/includes/header.php';
 
                 <div class="form-group">
                     <label for="nominal_dibayar">Nominal Dibayar (Rp)</label>
-                    <input type="number" id="nominal_dibayar" name="nominal_dibayar" class="form-control" required min="1" step="1"
-                           inputmode="numeric" value="<?= e($nilaiForm['nominal_dibayar']) ?>" aria-describedby="nominal-hint">
+                    <input type="number" id="nominal_dibayar" name="nominal_dibayar" class="form-control" required min="0.01" step="0.01"
+                           inputmode="decimal" value="<?= e($nilaiForm['nominal_dibayar']) ?>" aria-describedby="nominal-hint">
                     <span id="nominal-hint" class="teks-catatan">Harus sama persis dengan nominal tagihan.</span>
                     <span class="teks-catatan teks-galat" data-peringatan-nominal hidden></span>
                 </div>
@@ -313,6 +287,7 @@ require __DIR__ . '/includes/header.php';
         <a href="pembayaran.php" class="modal__tutup" data-tutup-modal aria-label="Tutup">&times;</a>
     </div>
     <div class="modal__body">
+        <?php if ($pesan && $detailBuka): ?><p class="notice" role="status"><?= e($pesan) ?></p><?php endif; ?>
         <p class="panel__kosong" data-detail-kosong <?= $detailBuka && $detailPembayaran !== null ? 'hidden' : '' ?>>
             Data pembayaran tidak ditemukan.
         </p>
@@ -324,10 +299,67 @@ require __DIR__ . '/includes/header.php';
             <div><dt>Tanggal Pembayaran</dt><dd data-detail-tanggal><?= $detailPembayaran ? e(format_tanggal($detailPembayaran['tanggal_bayar'])) : '' ?></dd></div>
             <div><dt>Nominal Dibayar</dt><dd data-detail-nominal-dibayar><?= $detailPembayaran ? e(format_rupiah($detailPembayaran['nominal_dibayar'])) : '' ?></dd></div>
             <div><dt>Metode</dt><dd data-detail-metode><?= $detailPembayaran ? e(label_metode_pembayaran($detailPembayaran['metode'])) : '' ?></dd></div>
-            <div data-detail-keterangan-baris <?= !($detailPembayaran && $detailPembayaran['keterangan'] !== '') ? 'hidden' : '' ?>>
+            <div><dt>Admin Pencatat</dt><dd><?= e($detailPembayaran['admin_pencatat'] ?? '') ?></dd></div>
+            <div><dt>Status transaksi</dt><dd><?= e(ucfirst($detailPembayaran['status'] ?? '')) ?></dd></div>
+            <div data-detail-keterangan-baris <?= ($detailPembayaran['keterangan'] ?? '') === '' ? 'hidden' : '' ?>>
                 <dt>Keterangan</dt><dd><?= e($detailPembayaran['keterangan'] ?? '') ?></dd>
             </div>
         </dl>
+        <?php if ($detailPembayaran): ?>
+            <?php if ($galat && !$modalBuka): ?><p class="notice notice--galat" role="alert"><?= e($galat[0]) ?></p><?php endif; ?>
+            <?php if ($detailPembayaran['status'] === 'sah'): ?>
+                <details <?= $galat && !$modalBuka ? 'open' : '' ?>>
+                    <summary class="btn btn-outline btn-sm">Koreksi atau batalkan pembayaran</summary>
+                    <p class="teks-catatan">Jika salah memilih tagihan, batalkan transaksi ini lalu catat penerimaan pada tagihan yang benar.</p>
+                    <form method="post" action="pembayaran.php?lihat=<?= (int)$detailId ?>#modal-detail-pembayaran" class="form-grid">
+                        <?= csrf_field() ?>
+                        <input type="hidden" name="pembayaran_id" value="<?= (int)$detailId ?>">
+                        <input type="hidden" name="tagihan_id" value="<?= (int)$detailPembayaran['tagihan_id'] ?>">
+                        <input type="hidden" name="versi" value="<?= (int)($audit[0]['id'] ?? 0) ?>">
+                        <label class="form-group">Tanggal pembayaran
+                            <input class="form-control" type="date" name="tanggal_bayar" required max="<?= e(tanggal_hari_ini()) ?>" value="<?= e($detailPembayaran['tanggal_bayar']) ?>">
+                        </label>
+                        <label class="form-group">Nominal dibayar (Rp)
+                            <input class="form-control" type="number" min="0.01" step="0.01" required name="nominal_dibayar" value="<?= e($detailPembayaran['jumlah_tagihan']) ?>">
+                        </label>
+                        <label class="form-group">Metode
+                            <select name="metode" class="form-control" required>
+                                <?php foreach ($daftarMetode as $kode => $labelMetode): ?>
+                                    <option value="<?= e($kode) ?>" <?= $kode === $detailPembayaran['metode'] ? 'selected' : '' ?>><?= e($labelMetode) ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </label>
+                        <label class="form-group">Keterangan
+                            <textarea name="keterangan" class="form-control" maxlength="255"><?= e($detailPembayaran['keterangan'] ?? '') ?></textarea>
+                        </label>
+                        <label class="form-group">Alasan koreksi atau pembatalan
+                            <textarea name="alasan" class="form-control" maxlength="255" required></textarea>
+                        </label>
+                        <div class="aksi-grup">
+                            <button class="btn btn-primary" name="aksi" value="koreksi">Simpan Koreksi</button>
+                            <button class="btn btn-hapus" name="aksi" value="batal">Batalkan Pembayaran</button>
+                        </div>
+                    </form>
+                </details>
+            <?php endif; ?>
+            <h3>Riwayat audit</h3>
+            <?php if (!$audit): ?><p class="teks-catatan">Transaksi tercatat sebelum jurnal audit tersedia.</p><?php endif; ?>
+            <?php foreach ($audit as $catatan): ?>
+                <details>
+                    <summary><?= e(ucfirst($catatan['aksi'])) ?> · <?= e($catatan['waktu']) ?> · <?= e($catatan['admin']) ?></summary>
+                    <?php if ($catatan['alasan'] !== null): ?><p>Alasan: <?= e($catatan['alasan']) ?></p><?php endif; ?>
+                    <?php foreach (['sebelum' => 'Sebelum', 'sesudah' => 'Sesudah'] as $kolom => $label): ?>
+                        <?php if ($catatan[$kolom] === null) continue; ?>
+                        <?php $salinan = json_decode($catatan[$kolom], true, flags: JSON_THROW_ON_ERROR); ?>
+                        <p><strong><?= e($label) ?></strong> · <?= e(format_tanggal($salinan['tanggal_bayar'])) ?> ·
+                            <?= e(format_rupiah($salinan['nominal_dibayar'])) ?> · <?= e(label_metode_pembayaran($salinan['metode'])) ?> ·
+                            <?= e(ucfirst($salinan['status'])) ?>
+                            <?php if ($salinan['keterangan'] !== null): ?><br>Keterangan: <?= e($salinan['keterangan']) ?><?php endif; ?>
+                        </p>
+                    <?php endforeach; ?>
+                </details>
+            <?php endforeach; ?>
+        <?php endif; ?>
     </div>
     <div class="modal__foot">
         <a href="pembayaran.php" class="btn btn-outline" data-tutup-modal>Tutup</a>

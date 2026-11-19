@@ -33,6 +33,7 @@ USE db_kos_aron;
 SET FOREIGN_KEY_CHECKS = 0;
 
 DROP TABLE IF EXISTS notifikasi;
+DROP TABLE IF EXISTS pembayaran_audit;
 DROP TABLE IF EXISTS pembayaran;
 DROP TABLE IF EXISTS tagihan;
 DROP TABLE IF EXISTS penyewaan;
@@ -198,7 +199,10 @@ CREATE TABLE pembayaran (
     created_at          TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at          TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (id),
-    UNIQUE KEY uq_pembayaran_tagihan (tagihan_id),
+    status              ENUM('sah','dibatalkan') NOT NULL DEFAULT 'sah',
+    tagihan_aktif_unik  BIGINT UNSIGNED GENERATED ALWAYS AS (IF(status = 'sah', tagihan_id, NULL)) VIRTUAL,
+    UNIQUE KEY uq_pembayaran_tagihan_aktif (tagihan_aktif_unik),
+    KEY idx_pembayaran_tagihan (tagihan_id),
     KEY idx_pembayaran_tanggal (tanggal_bayar),
     CONSTRAINT fk_pembayaran_tagihan
         FOREIGN KEY (tagihan_id) REFERENCES tagihan (id)
@@ -208,6 +212,20 @@ CREATE TABLE pembayaran (
         ON DELETE RESTRICT ON UPDATE CASCADE,
     CONSTRAINT chk_pembayaran_nominal CHECK (nominal_dibayar >= 0)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS pembayaran_audit (
+    id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    pembayaran_id BIGINT UNSIGNED NOT NULL,
+    aksi ENUM('catat','koreksi','batal') NOT NULL,
+    admin_id BIGINT UNSIGNED NOT NULL,
+    waktu TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    alasan VARCHAR(255) NULL,
+    sebelum JSON NULL,
+    sesudah JSON NOT NULL,
+    KEY idx_audit_pembayaran (pembayaran_id, id),
+    CONSTRAINT fk_audit_pembayaran FOREIGN KEY (pembayaran_id) REFERENCES pembayaran(id) ON DELETE RESTRICT,
+    CONSTRAINT fk_audit_admin FOREIGN KEY (admin_id) REFERENCES users(id) ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ------------------------------------------------------------
 -- 7. notifikasi
