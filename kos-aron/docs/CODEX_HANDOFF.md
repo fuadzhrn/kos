@@ -64,3 +64,13 @@ Harga penuh mengikuti penyewaan.harga_sewa_disepakati. Hari jatuh tempo 29–31 
 Konfirmasi memeriksa kembali data pratinjau milik sesi admin, mengunci sewa, dan menyimpan tagihan secara transaksional. Indeks uq_tagihan_penyewaan_periode sudah tersedia pada MySQL. Tagihan lama dilewati dan mempertahankan nominal serta tanggal historis. Status lunas memerlukan satu pembayaran dengan nominal tepat sebesar tagihan. Tahap 6 tidak menyediakan operasi penulisan pembayaran.
 
 Lihat DEVELOPMENT_PROGRESS.md untuk hasil 30 pemeriksaan Tahap 6. Pekerjaan berikutnya adalah Tahap 7, pencatatan pembayaran penuh oleh admin, ketika diminta.
+
+## Tahap 7 selesai — pencatatan pembayaran
+
+Admin mencatat penerimaan tunai atau transfer di admin/pembayaran.php. Form mengambil penghuni, kamar, periode dan nominal dari tagihan. Server memeriksa admin aktif, token CSRF, tanggal, metode dan kesamaan nominal sampai dua angka desimal. Transaksi mengunci tagihan dengan SELECT ... FOR UPDATE. Tagihan menjadi lunas saat memiliki satu pembayaran sah dengan nominal penuh. Daftar pembayaran, dashboard, laporan dan riwayat penghuni menggunakan hubungan yang sama.
+
+Dari Detail Pembayaran, admin dapat mengoreksi tanggal, metode, keterangan atau nominal penuh, serta membatalkan transaksi dengan alasan. Untuk salah tagihan, batalkan transaksi lama dan catat pada tagihan yang benar. Pembatalan mengembalikan tagihan ke Belum Bayar atau Terlambat sesuai tanggal jatuh tempo. Jika penerimaan dicatat kembali, transaksi mendapat ID baru. Riwayat admin tetap menampilkan yang dibatalkan, sedangkan total penerimaan dan riwayat pembayaran sah penghuni mengecualikannya.
+
+Database kini memiliki sembilan tabel. pembayaran.status membedakan sah dan dibatalkan. Indeks unik uq_pembayaran_tagihan_aktif memakai kolom generated tagihan_aktif_unik untuk menjaga satu pembayaran sah per tagihan. pembayaran_audit memuat ID pembayaran, tindakan, admin, waktu, alasan koreksi/pembatalan, dan salinan JSON sebelum/sesudah. Pencatatan dan audit berada dalam satu transaksi. Nilai awal tiga pembayaran lokal dipertahankan dan tidak dibuatkan catatan audit fiktif.
+
+Instalasi baru memakai database/schema.sql. Untuk memperbarui instalasi Tahap 6, pilih database aplikasi dan jalankan database/migrasi-07-pembayaran.sql. Migrasi sudah diterapkan pada db_kos_aron lokal dan diuji dijalankan dua kali di database terpisah. Daftar file dan hasil uji tersedia di DEVELOPMENT_PROGRESS.md. Lanjutkan Tahap 8 saat diminta.

@@ -82,3 +82,40 @@ Uji regresi awal gagal karena tombol massal masih belum tersedia pada prototipe.
 PHP lint lulus untuk 44 file. node --check pada admin.js, git diff --check, serta database/uji-koneksi.php juga lulus. Tampilan visual pada browser belum diuji pada tahap ini. Database uji dibersihkan setelah pengujian.
 
 Git berada pada main dengan perubahan Tahap 5 dan 6 di working tree. File database/seed.sql sudah berstatus untracked sejak sebelum audit awal. Tahap berikutnya adalah Tahap 7 setelah diminta.
+
+## 19 November 2026 — Tahap 7 selesai
+
+### Fitur dan keputusan
+
+- Admin mencatat tunai atau transfer lewat tombol Catat Pembayaran. Form memuat identitas penghuni, kamar, periode, jumlah tagihan dan tanggal. Server memvalidasi nominal desimal secara tepat, jumlah positif, tanggal sah sampai hari ini, metode, identitas admin aktif, CSRF dan pengiriman ulang form.
+- Pembayaran, status lunas dan riwayat audit konsisten secara transaksional. Pencatat asli tetap tercantum setelah koreksi oleh admin lain. Detail menampilkan kronologi, admin pelaku, waktu, alasan dan nilai sebelum/sesudah.
+- Pengguna memilih mendukung pembatalan. Transaksi batal tetap terlihat untuk admin dan dapat diaudit. Tagihan dapat dibayar lagi melalui transaksi ber-ID baru. Untuk salah pilih tagihan, batalkan pembayaran asal dengan alasan, lalu pilih tagihan yang benar. Detail lama ditolak bila transaksi sudah berubah.
+- Dashboard admin, dashboard penghuni, laporan serta riwayat memperoleh status dan nominal dari MySQL. Riwayat sah terkait ke penyewaan asal meskipun penghuni telah keluar.
+
+### File yang dibuat atau diubah
+
+| Bagian | File |
+|---|---|
+| Halaman dan form | admin/pembayaran.php, assets/js/admin.js |
+| Logika pencatatan, koreksi, pembatalan dan pembacaan | data/pembayaran.php, data/tagihan.php |
+| Struktur dan migrasi | database/schema.sql, database/migrasi-07-pembayaran.sql |
+| Pemeriksaan dan distribusi migrasi | database/uji-koneksi.php, .gitignore pada root repositori |
+| Handover | docs/CODEX_HANDOFF.md, docs/DEVELOPMENT_PROGRESS.md |
+
+Migrasi menambah tabel pembayaran_audit, status pembayaran dan indeks unik untuk tagihan yang pembayarannya sah. Migrasi diterapkan ke db_kos_aron lokal setelah diuji pada database terpisah. Seluruh kolom lama pada tiga pembayaran dibandingkan sebelum dan sesudah penerapan dan hasilnya identik. File migrasi diberi satu pengecualian spesifik pada .gitignore karena aturan umum mengabaikan dump SQL.
+
+### Bukti pengujian
+
+| Pengujian | Hasil |
+|---|---|
+| Uji awal | Form prototipe gagal menyimpan pembayaran tunai desimal. |
+| Alur HTTP dan MySQL | 36 pemeriksaan lulus, mencakup tunai, transfer, nominal nol/negatif/kurang/lebih, pecahan sen, periode berjalan, tanggal, metode, tagihan tidak ada atau sudah lunas, akses tamu dan penghuni, CSRF, status kedua dashboard dan riwayat. |
+| Koreksi dan pembatalan | Admin kedua dapat mengoreksi sambil mempertahankan identitas pencatat pertama. Alasan, admin, waktu serta nilai sebelum/sesudah tercatat. Form lama ditolak. Pembatalan mengubah status tagihan dan penerimaan baru mendapat ID baru. |
+| Rollback | Kegagalan insert jurnal yang sengaja dipicu di database uji membatalkan perubahan pembayaran saat pencatatan, koreksi dan pembatalan. |
+| Instalasi, konkurensi, keluar | Enam pemeriksaan tambahan lulus. DDL instalasi baru menghasilkan sembilan tabel. Dua proses PHP yang menunggu kunci pada tagihan yang sama menghasilkan satu pembayaran sah dan satu entri audit. MySQL juga menolak insert duplikat langsung. Checkout melalui fungsi aplikasi mempertahankan nominal, kamar asal, status lunas dan audit. |
+| Browser | Sembilan pemeriksaan Chrome headless pada halaman pembayaran yang dirender dengan data uji lulus. Modal terbuka, nama/kamar/periode/harga/tanggal terisi, dan nominal yang salah ditolak sebelum submit. Pengiriman HTTP dan penyimpanan diuji terpisah. |
+| Pemeriksaan akhir | PHP lint 44 file, node --check assets/js/admin.js, git diff --check dan uji koneksi PDO lulus. Tujuh tagihan dan tiga pembayaran lama masih ada pada database aplikasi. Semua mutasi skenario uji dijalankan pada database sementara yang dibersihkan setelah uji. |
+
+MySQL Laragon sempat berhenti pada sesi lanjutan dan dijalankan kembali menggunakan my.ini yang sudah ada. Git berada di main. Backup otomatis 1eb32be sudah mencakup implementasi inti. Migrasi dan pembaruan handover tersedia di working tree saat penyelesaian tahap. database/seed.sql telah berstatus untracked sebelum pekerjaan ini.
+
+Tahap berikutnya adalah Tahap 8, integrasi dan verifikasi area penghuni, termasuk penggantian password oleh penghuni. Pengujian responsif menyeluruh tetap dijadwalkan pada Tahap 10.
