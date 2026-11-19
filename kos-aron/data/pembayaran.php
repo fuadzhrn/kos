@@ -1,8 +1,9 @@
 <?php
 require_once __DIR__ . '/tagihan.php';
+require_once __DIR__ . '/notifikasi.php';
 
 const SQL_RIWAYAT_PEMBAYARAN = 'SELECT pb.*, s.penghuni_id, p.nama AS nama_penghuni, k.nomor AS nomor_kamar,
-    u.nama AS admin_pencatat, t.periode AS periode_tagihan, t.jumlah AS jumlah_tagihan FROM pembayaran pb
+    u.nama AS admin_pencatat, t.periode AS periode_tagihan, t.jatuh_tempo, t.jumlah AS jumlah_tagihan FROM pembayaran pb
     JOIN users u ON u.id = pb.dicatat_oleh
     JOIN tagihan t ON t.id = pb.tagihan_id JOIN penyewaan s ON s.id = t.penyewaan_id
     JOIN penghuni p ON p.id = s.penghuni_id JOIN kamar k ON k.id = s.kamar_id';
@@ -23,6 +24,13 @@ function get_pembayaran_by_id(int $id, bool $termasukBatal = false): ?array
     $filter = $termasukBatal ? '' : " AND pb.status = 'sah'";
     $stmt = koneksi_database()->prepare(SQL_RIWAYAT_PEMBAYARAN . ' WHERE pb.id = ?' . $filter);
     $stmt->execute([$id]);
+    return $stmt->fetch() ?: null;
+}
+
+function get_detail_pembayaran_penghuni(int $id, int $penghuniId): ?array
+{
+    $stmt = koneksi_database()->prepare(SQL_RIWAYAT_PEMBAYARAN . " WHERE pb.id = ? AND s.penghuni_id = ? AND pb.status = 'sah'");
+    $stmt->execute([$id, $penghuniId]);
     return $stmt->fetch() ?: null;
 }
 
@@ -190,6 +198,9 @@ function proses_pembayaran(string $aksi, int $adminId, array $form): int
             VALUES (?, ?, ?, ?, ?, ?)');
         $stmt->execute([$id, $aksi === 'simpan' ? 'catat' : $aksi, $adminId, $aksi === 'simpan' ? null : $alasan,
             $lama === null ? null : json_encode($lama, JSON_THROW_ON_ERROR), json_encode($baru, JSON_THROW_ON_ERROR)]);
+        if ($aksi === 'simpan') {
+            buat_notifikasi_tagihan($db, date('Y-m-d'), $tagihanId);
+        }
         $db->commit();
         return $id;
     } catch (Throwable $e) {

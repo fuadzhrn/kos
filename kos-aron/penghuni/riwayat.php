@@ -1,14 +1,11 @@
 <?php
-require_once __DIR__ . '/../includes/config.php';
-require_role('penghuni', '../login.php');
+require_once __DIR__ . '/includes/konteks.php';
 require_once __DIR__ . '/../data/tagihan.php'; // juga memuat data penghuni, kamar & pembayaran
 
 $judulHalaman = 'Riwayat Pembayaran';
 $menuAktif    = 'riwayat';
 
-require __DIR__ . '/includes/header.php';
 
-// $penghuniLogin sudah disiapkan oleh includes/header.php (lihat get_penghuni_login()).
 $riwayatPembayaran = $penghuniLogin ? get_pembayaran_by_penghuni($penghuniLogin['id']) : [];
 
 // Pilihan filter Bulan & Tahun diambil dari data riwayat itu sendiri (tidak hardcode).
@@ -24,15 +21,12 @@ krsort($daftarTahun);
 
 // Detail pembayaran (hanya tampilan), dibuka lewat ?lihat=ID -- sama seperti admin/pembayaran.php.
 $detailId         = filter_input(INPUT_GET, 'lihat', FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
-$detailPembayaran = null;
-if ($detailId && $penghuniLogin) {
-    $kandidat = get_pembayaran_by_id($detailId);
-    // Hanya boleh melihat detail milik sendiri.
-    if ($kandidat !== null && $kandidat['penghuni_id'] === $penghuniLogin['id']) {
-        $detailPembayaran = $kandidat;
-    }
+$detailBuka = array_key_exists('lihat', $_GET);
+$detailPembayaran = $detailId && $penghuniLogin ? get_detail_pembayaran_penghuni($detailId, $penghuniLogin['id']) : null;
+if ($detailBuka && !$detailPembayaran) {
+    http_response_code(404);
 }
-$detailBuka = $detailId !== null && $detailId !== false;
+require __DIR__ . '/includes/header.php';
 ?>
 
 <div class="admin-page-head">
@@ -95,6 +89,10 @@ $detailBuka = $detailId !== null && $detailId !== false;
                         <?php foreach ($riwayatPembayaran as $i => $p): ?>
                             <?php
                             [$tahunBaris, $bulanBaris] = explode('-', $p['periode_tagihan']);
+                            $status = status_tagihan([
+                                'tanggal_bayar' => $p['jumlah_tagihan'] === $p['nominal_dibayar'] ? $p['tanggal_bayar'] : null,
+                                'jatuh_tempo' => $p['jatuh_tempo'],
+                            ]);
                             $dataLihat = json_encode([
                                 'nama_penghuni'          => $p['nama_penghuni'],
                                 'nomor_kamar'             => $p['nomor_kamar'],
@@ -113,7 +111,7 @@ $detailBuka = $detailId !== null && $detailId !== false;
                                 <td data-label="Nomor Kamar">Kamar <?= e($p['nomor_kamar']) ?></td>
                                 <td class="tabel__angka" data-label="Nominal"><?= e(format_rupiah($p['nominal_dibayar'])) ?></td>
                                 <td data-label="Metode"><?= e(label_metode_pembayaran($p['metode'])) ?></td>
-                                <td data-label="Status"><span class="badge badge--lunas">Lunas</span></td>
+                                <td data-label="Status"><span class="badge badge--<?= e($status) ?>"><?= e(label_status_tagihan($status)) ?></span></td>
                                 <td data-label="Aksi">
                                     <a href="riwayat.php?lihat=<?= (int) $p['id'] ?>#modal-detail-pembayaran" class="btn btn-outline btn-sm"
                                        data-lihat-pembayaran="<?= e($dataLihat) ?>" aria-label="Detail pembayaran <?= e(format_periode($p['periode_tagihan'])) ?>">Detail</a>
@@ -148,7 +146,7 @@ $detailBuka = $detailId !== null && $detailId !== false;
             <div><dt>Tanggal Pembayaran</dt><dd data-detail-tanggal><?= $detailPembayaran ? e(format_tanggal($detailPembayaran['tanggal_bayar'])) : '' ?></dd></div>
             <div><dt>Nominal Dibayar</dt><dd data-detail-nominal-dibayar><?= $detailPembayaran ? e(format_rupiah($detailPembayaran['nominal_dibayar'])) : '' ?></dd></div>
             <div><dt>Metode</dt><dd data-detail-metode><?= $detailPembayaran ? e(label_metode_pembayaran($detailPembayaran['metode'])) : '' ?></dd></div>
-            <div data-detail-keterangan-baris <?= !($detailPembayaran && $detailPembayaran['keterangan'] !== '') ? 'hidden' : '' ?>>
+            <div data-detail-keterangan-baris <?= ($detailPembayaran['keterangan'] ?? '') === '' ? 'hidden' : '' ?>>
                 <dt>Keterangan</dt><dd><?= e($detailPembayaran['keterangan'] ?? '') ?></dd>
             </div>
         </dl>

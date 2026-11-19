@@ -3,7 +3,7 @@ require_once __DIR__ . '/includes/config.php';
 
 $judulHalaman  = 'Login';
 $halamanAktif  = 'login';
-$deskripsiMeta = 'Halaman login khusus Admin dan Penghuni Kos Aron.';
+$deskripsiMeta = 'Halaman login khusus Admin dan Penghuni ' . SITE_NAME . '.';
 
 // Sudah login? Tidak perlu melihat form login lagi.
 $sudahLogin = pengguna_login();
@@ -60,7 +60,7 @@ require __DIR__ . '/includes/header.php';
     <div class="container">
         <div class="auth-box">
             <h1>Login</h1>
-            <p class="auth-box__sub">Khusus Admin dan Penghuni Kos Aron.</p>
+            <p class="auth-box__sub">Khusus Admin dan Penghuni <?= e(SITE_NAME) ?>.</p>
 
             <?php if (isset($_GET['keluar'])): ?>
                 <p class="notice notice--berhasil" role="status">Anda telah keluar.</p>

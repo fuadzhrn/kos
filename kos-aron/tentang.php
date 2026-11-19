@@ -4,16 +4,16 @@ require_once __DIR__ . '/data/kamar.php';
 
 $judulHalaman  = 'Tentang';
 $halamanAktif  = 'tentang';
-$deskripsiMeta = 'Informasi mengenai Kos Aron yang berlokasi di ' . SITE_LOCATION . '.';
+$deskripsiMeta = 'Informasi mengenai ' . SITE_NAME . ' yang berlokasi di ' . SITE_LOCATION . '.';
 
 $jumlahKamar = count(get_semua_kamar());
 $nomorWa     = nomor_whatsapp_tampil();
-$urlWa       = url_whatsapp('Halo, saya ingin bertanya tentang Kos Aron.');
+$urlWa       = url_whatsapp('Halo, saya ingin bertanya tentang ' . SITE_NAME . '.');
 
 // Paragraf kedua: dari konfigurasi jika sudah diisi pemilik, jika belum pakai kalimat netral.
 $deskripsiTambahan = TENTANG_DESKRIPSI_TAMBAHAN !== ''
     ? TENTANG_DESKRIPSI_TAMBAHAN
-    : 'Keterangan lebih lengkap mengenai Kos Aron akan dilengkapi berdasarkan informasi dari pemilik. '
+    : 'Keterangan lebih lengkap mengenai ' . SITE_NAME . ' akan dilengkapi berdasarkan informasi dari pemilik. '
       . 'Untuk saat ini, calon penghuni dapat melihat daftar kamar atau menghubungi pemilik secara langsung.';
 
 require __DIR__ . '/includes/header.php';
@@ -21,8 +21,8 @@ require __DIR__ . '/includes/header.php';
 
 <section class="page-header">
     <div class="container">
-        <h1>Tentang Kos Aron</h1>
-        <p>Informasi mengenai Kos Aron yang berlokasi di <?= e(SITE_LOCATION) ?>.</p>
+        <h1>Tentang <?= e(SITE_NAME) ?></h1>
+        <p>Informasi mengenai <?= e(SITE_NAME) ?> yang berlokasi di <?= e(SITE_LOCATION) ?>.</p>
     </div>
 </section>
 
@@ -30,14 +30,14 @@ require __DIR__ . '/includes/header.php';
 <section class="section">
     <div class="container split-grid">
         <div class="split-grid__teks">
-            <h2>Mengenal Kos Aron</h2>
-            <p>Kos Aron merupakan tempat penyewaan kamar yang berlokasi di <?= e(SITE_LOCATION) ?>. Website ini menyediakan informasi mengenai kamar, fasilitas, harga sewa, dan status ketersediaan kamar.</p>
+            <h2>Mengenal <?= e(SITE_NAME) ?></h2>
+            <p><?= e(SITE_NAME) ?> merupakan tempat penyewaan kamar yang berlokasi di <?= e(SITE_LOCATION) ?>. Website ini menyediakan informasi mengenai kamar, fasilitas, harga sewa, dan status ketersediaan kamar.</p>
             <p><?= e($deskripsiTambahan) ?></p>
         </div>
 
         <div class="foto-frame">
             <img src="<?= e(url_foto(FOTO_BANGUNAN_KOS, PATH_FOTO_KOS)) ?>"
-                 alt="Foto bangunan Kos Aron" loading="lazy" data-fallback>
+                 alt="Foto bangunan <?= e(SITE_NAME) ?>" loading="lazy" data-fallback>
         </div>
     </div>
 </section>

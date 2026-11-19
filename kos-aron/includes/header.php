@@ -29,7 +29,7 @@ $judulLengkap = $judulHalaman === SITE_NAME ? SITE_NAME : $judulHalaman . ' - ' 
 
 <header class="site-header">
     <div class="container navbar">
-        <a href="index.php" class="brand">KOS ARON</a>
+        <a href="index.php" class="brand"><?= e(mb_strtoupper(SITE_NAME)) ?></a>
 
         <button type="button" class="nav-toggle" aria-label="Buka menu" aria-expanded="false" aria-controls="nav-menu">
             <span></span><span></span><span></span>

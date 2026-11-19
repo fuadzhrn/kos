@@ -54,29 +54,13 @@ function get_tagihan_by_penghuni(int $penghuniId): array
     return array_map('lengkapi_tagihan', $stmt->fetchAll());
 }
 
-/**
- * Tagihan "bulan berjalan" milik satu penghuni: tagihan dengan periode yang
- * sama dengan bulan ini jika ada, atau tagihan dengan periode TERBARU jika
- * penghuni belum punya tagihan untuk bulan ini. Null jika belum ada tagihan
- * sama sekali. Dipakai di Dashboard Penghuni untuk kartu "Status Tagihan".
- */
+/** Tagihan sewa aktif pada bulan kalender berjalan (WIB). */
 function get_tagihan_berjalan(int $penghuniId): ?array
 {
-    $stmt = koneksi_database()->prepare(SQL_RIWAYAT_TAGIHAN . " WHERE s.penghuni_id = ? AND s.status = 'aktif'
-        ORDER BY t.periode DESC, t.id DESC");
-    $stmt->execute([$penghuniId]);
-    $daftar = array_map('lengkapi_tagihan', $stmt->fetchAll());
-    if (empty($daftar)) {
-        return null;
-    }
-
-    $bulanIni = substr(tanggal_hari_ini(), 0, 7);
-    foreach ($daftar as $tagihan) {
-        if ($tagihan['periode'] === $bulanIni) {
-            return $tagihan;
-        }
-    }
-    return $daftar[0];
+    $stmt = koneksi_database()->prepare(SQL_RIWAYAT_TAGIHAN . " WHERE s.penghuni_id = ? AND s.status = 'aktif' AND t.periode = ?");
+    $stmt->execute([$penghuniId, substr(tanggal_hari_ini(), 0, 7)]);
+    $baris = $stmt->fetch();
+    return $baris ? lengkapi_tagihan($baris) : null;
 }
 
 /**

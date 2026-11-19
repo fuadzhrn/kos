@@ -4,12 +4,12 @@ require_once __DIR__ . '/data/kamar.php';
 
 $judulHalaman  = SITE_NAME;
 $halamanAktif  = 'beranda';
-$deskripsiMeta = 'Informasi kamar, fasilitas, dan harga sewa Kos Aron di ' . SITE_LOCATION . '.';
+$deskripsiMeta = 'Informasi kamar, fasilitas, dan harga sewa ' . SITE_NAME . ' di ' . SITE_LOCATION . '.';
 
 $kamarTersedia = get_kamar_tersedia(3);
 
 // Tombol "Hubungi Pemilik": ke WhatsApp jika nomor sudah diatur, jika belum ke halaman Kontak.
-$kontak           = link_hubungi_pemilik('Halo, saya ingin bertanya tentang kamar di Kos Aron.');
+$kontak           = link_hubungi_pemilik('Halo, saya ingin bertanya tentang kamar di ' . SITE_NAME . '.');
 $atributEksternal = $kontak['eksternal'] ? ' target="_blank" rel="noopener"' : '';
 
 require __DIR__ . '/includes/header.php';
@@ -20,14 +20,14 @@ require __DIR__ . '/includes/header.php';
     <div class="container hero-grid">
         <div class="hero-text">
             <p class="eyebrow">Informasi Kos</p>
-            <h1>Kos Aron di Kolor</h1>
-            <p>Lihat informasi kamar kos, fasilitas, dan harga sewa yang tersedia di Kos Aron.</p>
+            <h1><?= e(SITE_NAME) ?> di Kolor</h1>
+            <p>Lihat informasi kamar kos, fasilitas, dan harga sewa yang tersedia di <?= e(SITE_NAME) ?>.</p>
             <a href="kamar.php" class="btn btn-primary">Lihat Kamar</a>
         </div>
 
         <div class="foto-frame">
             <img src="<?= e(url_foto(FOTO_BANGUNAN_KOS, PATH_FOTO_KOS)) ?>"
-                 alt="Foto bangunan Kos Aron" data-fallback>
+                 alt="Foto bangunan <?= e(SITE_NAME) ?>" data-fallback>
         </div>
     </div>
 </section>
@@ -62,8 +62,8 @@ require __DIR__ . '/includes/header.php';
 <section class="section section--alt">
     <div class="container">
         <div class="about-short">
-            <h2>Tentang Kos Aron</h2>
-            <p>Kos Aron adalah tempat penyewaan kamar kos di <?= e(SITE_LOCATION) ?>. Melalui website ini, calon penghuni dapat melihat daftar kamar, status ketersediaan, dan harga sewa sebelum menghubungi pemilik.</p>
+            <h2>Tentang <?= e(SITE_NAME) ?></h2>
+            <p><?= e(SITE_NAME) ?> adalah tempat penyewaan kamar kos di <?= e(SITE_LOCATION) ?>. Melalui website ini, calon penghuni dapat melihat daftar kamar, status ketersediaan, dan harga sewa sebelum menghubungi pemilik.</p>
             <a href="tentang.php" class="link-more">Selengkapnya <span aria-hidden="true">&rarr;</span></a>
         </div>
     </div>

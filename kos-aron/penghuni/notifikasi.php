@@ -1,14 +1,22 @@
 <?php
-require_once __DIR__ . '/../includes/config.php';
-require_role('penghuni', '../login.php');
+require_once __DIR__ . '/includes/konteks.php';
 require_once __DIR__ . '/../data/notifikasi.php'; // juga memuat data tagihan, penghuni, kamar & pembayaran
 
 $judulHalaman = 'Notifikasi';
 $menuAktif    = 'notifikasi';
 
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $id = filter_input(INPUT_POST, 'notifikasi_id', FILTER_VALIDATE_INT);
+    $token = $_POST['csrf_token'] ?? null;
+    if (!$penghuniLogin || !is_string($token) || !csrf_valid($token) || !$id || !baca_notifikasi($penghuniLogin['id'], $id)) {
+        http_response_code(403);
+        exit('Akses ditolak.');
+    }
+    header('Location: notifikasi.php', true, 303);
+    exit;
+}
 require __DIR__ . '/includes/header.php';
 
-// $penghuniLogin sudah disiapkan oleh includes/header.php (lihat get_penghuni_login()).
 $daftarNotifikasi = $penghuniLogin ? get_notifikasi_penghuni($penghuniLogin['id']) : [];
 
 // Warna tepi kiri notifikasi mengikuti komponen .notice yang sudah ada.
@@ -36,6 +44,7 @@ $kelasNotice = [
     <section class="panel">
         <div class="panel__head">
             <h2>Daftar Notifikasi</h2>
+            <span><?= jumlah_notifikasi_belum_dibaca($penghuniLogin['id']) ?> belum dibaca</span>
         </div>
 
         <?php if (empty($daftarNotifikasi)): ?>
@@ -52,6 +61,12 @@ $kelasNotice = [
                                 </span>
                             </div>
                             <p><?= e($n['pesan']) ?></p>
+                            <?php if (!$n['dibaca']): ?>
+                                <form method="post">
+                                    <?= csrf_field() ?>
+                                    <button class="btn btn-outline" name="notifikasi_id" value="<?= (int) $n['id'] ?>">Tandai dibaca</button>
+                                </form>
+                            <?php endif; ?>
                             <p class="notif-item__waktu"><?= e(format_tanggal($n['tanggal'])) ?></p>
                         </div>
                     </li>
@@ -60,10 +75,6 @@ $kelasNotice = [
         <?php endif; ?>
     </section>
 
-    <p class="teks-catatan">
-        Notifikasi di atas hanya contoh tampilan dan dihasilkan dari data tagihan Anda saat halaman ini dibuka.
-        Belum ada sistem pengingat otomatis, dan notifikasi di sini tidak dikirim lewat WhatsApp atau email.
-    </p>
 
 <?php endif; ?>
 

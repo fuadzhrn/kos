@@ -1,22 +1,28 @@
 <?php
 require_once __DIR__ . '/../includes/config.php';
 require_role('admin', '../login.php');
-require_once __DIR__ . '/../data/tagihan.php'; // juga memuat data penghuni, kamar & pembayaran
+require_once __DIR__ . '/../data/laporan.php';
 
 $judulHalaman = 'Laporan';
 $menuAktif    = 'laporan';
 
-$daftarPeriode = daftar_periode_tagihan(); // terbaru di atas, mis. ['2026-11', '2026-10']
-
-// Filter "Bulan dan Tahun": satu periode (format sama dengan filter Tagihan/Pembayaran),
-// atau 'semua' untuk seluruh periode. Default ke periode TERBARU yang tersedia.
-$periodeDipilih = $_GET['periode'] ?? ($daftarPeriode[0] ?? 'semua');
-if ($periodeDipilih !== 'semua' && !in_array($periodeDipilih, $daftarPeriode, true)) {
-    $periodeDipilih = $daftarPeriode[0] ?? 'semua';
+$periode = $_GET['periode'] ?? null;
+$tahun = filter_input(INPUT_GET, 'tahun', FILTER_VALIDATE_INT, ['options' => ['min_range' => 1000, 'max_range' => 9999]]) ?: null;
+$bulan = filter_input(INPUT_GET, 'bulan', FILTER_VALIDATE_INT, ['options' => ['min_range' => 1, 'max_range' => 12]]) ?: null;
+if (!isset($_GET['bulan']) && !isset($_GET['tahun']) && $periode === null) {
+    $periode = koneksi_database()->query('SELECT MAX(periode) FROM tagihan')->fetchColumn();
 }
-$periodeUntukData = $periodeDipilih === 'semua' ? null : $periodeDipilih;
+if (!isset($_GET['bulan']) && !isset($_GET['tahun']) && is_string($periode) && preg_match('/^([1-9][0-9]{3})-(0[1-9]|1[0-2])$/D', $periode, $cocok)) {
+    [$tahun, $bulan] = [(int) $cocok[1], (int) $cocok[2]];
+}
+if ($bulan !== null && $tahun === null) {
+    $tahun = (int) date('Y');
+}
+$awal = $tahun ? sprintf('%04d-%02d', $tahun, $bulan ?? 1) : null;
+$akhir = $tahun ? sprintf('%04d-%02d', $tahun, $bulan ?? 12) : null;
+$tanggalKamar = $akhir ? min(tanggal_hari_ini(), (new DateTimeImmutable($akhir . '-01'))->format('Y-m-t')) : tanggal_hari_ini();
+$labelPeriode = $bulan ? format_periode($awal) : ($tahun ? (string) $tahun : 'Semua Periode');
 
-// Filter "Jenis Laporan": tabel mana yang ditampilkan.
 $jenisDipilih = $_GET['jenis'] ?? 'semua';
 if (!in_array($jenisDipilih, ['semua', 'pembayaran', 'kamar'], true)) {
     $jenisDipilih = 'semua';
@@ -24,19 +30,8 @@ if (!in_array($jenisDipilih, ['semua', 'pembayaran', 'kamar'], true)) {
 $tampilkanPembayaran = $jenisDipilih !== 'kamar';
 $tampilkanKamar       = $jenisDipilih !== 'pembayaran';
 
-// --- Ringkasan (4 kartu) ---
-$ringkasanTagihan   = ringkasan_tagihan_periode($periodeUntukData);
-$ringkasanPembayaran = ringkasan_pembayaran_periode($periodeUntukData);
-$statKamar           = hitung_kamar_per_status();
-
-// --- Data tabel ---
-$daftarPembayaranLaporan = array_values(array_filter(
-    get_semua_pembayaran(),
-    fn ($p) => $periodeUntukData === null || $p['periode_tagihan'] === $periodeUntukData
-));
-$daftarKamarLaporan = get_semua_kamar(true); // admin: laporan mencakup juga kamar berkondisi 'perawatan'
-
-$labelPeriode = $periodeDipilih === 'semua' ? 'Semua Periode' : format_periode($periodeDipilih);
+[$ringkasanTagihan, $daftarPembayaranLaporan, $daftarKamarLaporan] = data_laporan($awal, $akhir, $tanggalKamar);
+$statKamar = $daftarKamarLaporan[0] ?? ['terisi' => 0, 'kosong' => 0, 'total' => 0];
 
 require __DIR__ . '/includes/header.php';
 ?>
@@ -44,20 +39,24 @@ require __DIR__ . '/includes/header.php';
 <div class="admin-page-head admin-page-head--aksi">
     <div>
         <h1>Laporan</h1>
-        <p>Rekap tagihan, pembayaran, dan kamar Kos Aron.</p>
+        <p>Rekap tagihan, pembayaran, dan kamar <?= e(SITE_NAME) ?>.</p>
     </div>
     <button type="button" class="btn btn-outline" data-cetak-laporan>Cetak Laporan</button>
 </div>
 
 <form method="get" action="laporan.php" class="toolbar" role="search" aria-label="Filter laporan">
     <div class="filter-field">
-        <label for="periode">Bulan dan Tahun</label>
-        <select id="periode" name="periode" class="form-control">
-            <option value="semua"<?= $periodeDipilih === 'semua' ? ' selected' : '' ?>>Semua Periode</option>
-            <?php foreach ($daftarPeriode as $periode): ?>
-                <option value="<?= e($periode) ?>"<?= $periodeDipilih === $periode ? ' selected' : '' ?>><?= e(format_periode($periode)) ?></option>
-            <?php endforeach; ?>
+        <label for="bulan">Bulan</label>
+        <select id="bulan" name="bulan" class="form-control">
+            <option value="">Semua bulan</option>
+            <?php for ($i = 1; $i <= 12; $i++): ?>
+                <option value="<?= $i ?>"<?= $bulan === $i ? ' selected' : '' ?>><?= e(explode(' ', format_periode(sprintf('2000-%02d', $i)))[0]) ?></option>
+            <?php endfor; ?>
         </select>
+    </div>
+    <div class="filter-field">
+        <label for="tahun">Tahun</label>
+        <input id="tahun" name="tahun" class="form-control" type="number" min="1000" max="9999" placeholder="Semua tahun" value="<?= e((string) $tahun) ?>">
     </div>
     <div class="filter-field">
         <label for="jenis">Jenis Laporan</label>
@@ -80,8 +79,8 @@ require __DIR__ . '/includes/header.php';
     </div>
     <div class="stat-card">
         <p class="stat-card__label">Pembayaran Diterima</p>
-        <p class="stat-card__nilai"><?= $ringkasanPembayaran['jumlah'] ?></p>
-        <p class="stat-card__ket"><?= e(format_rupiah($ringkasanPembayaran['total'])) ?></p>
+        <p class="stat-card__nilai"><?= $ringkasanTagihan['jumlah_bayar'] ?></p>
+        <p class="stat-card__ket"><?= e(format_rupiah($ringkasanTagihan['total_bayar'])) ?></p>
     </div>
     <div class="stat-card">
         <p class="stat-card__label">Tagihan Belum Lunas</p>
@@ -91,7 +90,7 @@ require __DIR__ . '/includes/header.php';
     <div class="stat-card">
         <p class="stat-card__label">Kamar Terisi</p>
         <p class="stat-card__nilai"><?= $statKamar['terisi'] ?></p>
-        <p class="stat-card__ket">dari <?= $statKamar['total'] ?> kamar</p>
+        <p class="stat-card__ket"><?= $statKamar['kosong'] ?> kosong · <?= $statKamar['total'] ?> kamar</p>
     </div>
 </section>
 
@@ -133,7 +132,7 @@ require __DIR__ . '/includes/header.php';
                     <tfoot>
                         <tr>
                             <td colspan="5" class="tabel__angka"><strong>Total</strong></td>
-                            <td class="tabel__angka"><strong><?= e(format_rupiah($ringkasanPembayaran['total'])) ?></strong></td>
+                            <td class="tabel__angka"><strong><?= e(format_rupiah($ringkasanTagihan['total_bayar'])) ?></strong></td>
                             <td></td>
                         </tr>
                     </tfoot>
@@ -147,7 +146,7 @@ require __DIR__ . '/includes/header.php';
     <section class="panel">
         <div class="panel__head">
             <h2>Laporan Kamar</h2>
-            <span class="text-muted">Kondisi saat ini</span>
+            <span class="text-muted">Hunian per <?= e(format_tanggal($tanggalKamar)) ?></span>
         </div>
         <div class="tabel-wrap">
             <table class="tabel tabel--lebar">
@@ -162,13 +161,12 @@ require __DIR__ . '/includes/header.php';
                 </thead>
                 <tbody>
                     <?php foreach ($daftarKamarLaporan as $i => $k): ?>
-                        <?php $penghuniKamar = get_penghuni_by_kamar($k['id']); ?>
                         <tr>
                             <td class="tabel__no" data-label="No"><?= $i + 1 ?></td>
                             <td class="tabel__utama" data-label="Nomor Kamar">Kamar <?= e($k['nomor']) ?></td>
                             <td class="tabel__angka" data-label="Harga Sewa"><?= e(format_rupiah($k['harga'])) ?></td>
                             <td data-label="Status"><span class="badge badge--<?= e($k['status']) ?>"><?= e(ucfirst($k['status'])) ?></span></td>
-                            <td data-label="Penghuni"><?= $penghuniKamar ? e($penghuniKamar['nama']) : '-' ?></td>
+                            <td data-label="Penghuni"><?= e($k['nama'] ?? '-') ?></td>
                         </tr>
                     <?php endforeach; ?>
                 </tbody>
@@ -177,6 +175,6 @@ require __DIR__ . '/includes/header.php';
     </section>
 <?php endif; ?>
 
-<p class="teks-catatan">Laporan dihitung langsung dari data tagihan, pembayaran, dan kamar yang sama dengan halaman lain -- bukan sumber data terpisah.</p>
+<p class="teks-catatan">Pembayaran dikelompokkan menurut periode tagihan. Hunian mengikuti tanggal masuk dan keluar. Harga kamar kosong mengikuti daftar harga saat ini.</p>
 
 <?php require __DIR__ . '/includes/footer.php'; ?>

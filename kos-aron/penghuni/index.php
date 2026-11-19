@@ -1,26 +1,17 @@
 <?php
-require_once __DIR__ . '/../includes/config.php';
-require_role('penghuni', '../login.php');
+require_once __DIR__ . '/includes/konteks.php';
 require_once __DIR__ . '/../data/tagihan.php'; // juga memuat data penghuni, kamar & pembayaran
 
 $judulHalaman = 'Dashboard Penghuni';
 $menuAktif    = 'dashboard';
 
-require __DIR__ . '/includes/header.php';
+require_once __DIR__ . '/../data/notifikasi.php';
 
-// $penghuniLogin sudah disiapkan oleh includes/header.php (lihat get_penghuni_login()).
-$kamarSaya       = $penghuniLogin ? get_kamar_by_id($penghuniLogin['kamar_id']) : null;
 $tagihanBerjalan = $penghuniLogin ? get_tagihan_berjalan($penghuniLogin['id']) : null;
 $riwayatTerbaru  = $penghuniLogin ? get_pembayaran_by_penghuni($penghuniLogin['id'], 3) : [];
 
-// Notifikasi: tagihan yang BELUM dibayar dan jatuh temponya mendekat (<= 7 hari lagi).
-$notifJatuhTempo = null;
-if ($tagihanBerjalan !== null && $tagihanBerjalan['status'] === 'belum_bayar') {
-    $sisaHari = (int) round((strtotime($tagihanBerjalan['jatuh_tempo']) - strtotime(tanggal_hari_ini())) / 86400);
-    if ($sisaHari >= 0 && $sisaHari <= 7) {
-        $notifJatuhTempo = $tagihanBerjalan;
-    }
-}
+$notifikasi = $penghuniLogin ? get_notifikasi_penghuni($penghuniLogin['id'], 1) : [];
+require __DIR__ . '/includes/header.php';
 ?>
 
 <div class="admin-page-head">
@@ -49,11 +40,11 @@ if ($tagihanBerjalan !== null && $tagihanBerjalan['status'] === 'belum_bayar') {
             </div>
             <div>
                 <dt>Nomor Kamar</dt>
-                <dd><?= $kamarSaya ? 'Kamar ' . e($kamarSaya['nomor']) : '-' ?></dd>
+                <dd><?= $penghuniLogin['kamar_id'] ? 'Kamar ' . e($penghuniLogin['nomor']) : '-' ?></dd>
             </div>
             <div>
                 <dt>Harga Sewa Bulanan</dt>
-                <dd><?= $kamarSaya ? e(format_rupiah($penghuniLogin['harga_sewa_disepakati'])) . ' / bulan' : '-' ?></dd>
+                <dd><?= $penghuniLogin['kamar_id'] ? e(format_rupiah($penghuniLogin['harga_sewa_disepakati'])) . ' / bulan' : '-' ?></dd>
             </div>
             <div>
                 <dt>Tanggal Jatuh Tempo</dt>
@@ -69,7 +60,7 @@ if ($tagihanBerjalan !== null && $tagihanBerjalan['status'] === 'belum_bayar') {
             <a href="tagihan.php" class="link-more">Lihat semua tagihan <span aria-hidden="true">&rarr;</span></a>
         </div>
         <?php if ($tagihanBerjalan === null): ?>
-            <p class="panel__kosong">Belum ada tagihan untuk Anda saat ini.</p>
+            <p class="panel__kosong">Belum ada tagihan untuk bulan ini.</p>
         <?php else: ?>
             <dl class="info-tabel info-tabel--panel">
                 <div>
@@ -140,16 +131,16 @@ if ($tagihanBerjalan !== null && $tagihanBerjalan['status'] === 'belum_bayar') {
     <!-- 5. Notifikasi -->
     <section class="panel">
         <div class="panel__head">
-            <h2>Notifikasi</h2>
+            <h2>Notifikasi (<?= jumlah_notifikasi_belum_dibaca($penghuniLogin['id']) ?> belum dibaca)</h2>
             <a href="notifikasi.php" class="link-more">Lihat semua notifikasi <span aria-hidden="true">&rarr;</span></a>
         </div>
-        <?php if ($notifJatuhTempo !== null): ?>
-            <p class="notice notice--peringatan">
-                Tagihan periode <?= e(format_periode($notifJatuhTempo['periode'])) ?> akan jatuh tempo pada
-                <?= e(format_tanggal($notifJatuhTempo['jatuh_tempo'])) ?>. Segera lakukan pembayaran kepada pemilik.
-            </p>
+        <?php if ($notifikasi): ?>
+            <p class="notice"><strong><?= e($notifikasi[0]['judul']) ?></strong>
+                <span class="badge badge--<?= $notifikasi[0]['dibaca'] ? 'sudah-dibaca' : 'belum-dibaca' ?>">
+                    <?= $notifikasi[0]['dibaca'] ? 'Sudah Dibaca' : 'Belum Dibaca' ?>
+                </span><br><?= e($notifikasi[0]['pesan']) ?></p>
         <?php else: ?>
-            <p class="panel__kosong">Tidak ada notifikasi tagihan yang mendekati jatuh tempo saat ini.</p>
+            <p class="panel__kosong">Belum ada notifikasi untuk Anda.</p>
         <?php endif; ?>
     </section>
 

@@ -22,7 +22,7 @@ if ($kamar !== null) {
     $daftarFoto = daftar_foto_kamar($kamar);
     $fotoUtama  = $daftarFoto[0] ?? FOTO_PLACEHOLDER;
 
-    $kontak      = link_hubungi_pemilik('Halo, saya ingin menanyakan informasi ' . $namaKamar . ' di Kos Aron.');
+    $kontak      = link_hubungi_pemilik('Halo, saya ingin menanyakan informasi ' . $namaKamar . ' di ' . SITE_NAME . '.');
     $labelTombol = $tersedia ? 'Hubungi Pemilik' : 'Tanyakan Informasi';
     $atributLink = $kontak['eksternal'] ? ' target="_blank" rel="noopener"' : '';
 } else {
@@ -142,9 +142,9 @@ require __DIR__ . '/includes/header.php';
             <div class="contact-box">
                 <p>
                     <?php if ($tersedia): ?>
-                        Tertarik dengan kamar ini? Hubungi pemilik Kos Aron untuk informasi lebih lanjut.
+                        Tertarik dengan kamar ini? Hubungi pemilik <?= e(SITE_NAME) ?> untuk informasi lebih lanjut.
                     <?php else: ?>
-                        Kamar ini sedang terisi. Hubungi pemilik Kos Aron untuk menanyakan ketersediaan atau informasi lainnya.
+                        Kamar ini sedang terisi. Hubungi pemilik <?= e(SITE_NAME) ?> untuk menanyakan ketersediaan atau informasi lainnya.
                     <?php endif; ?>
                 </p>
                 <a href="<?= e($kontak['url']) ?>" class="btn btn-primary"<?= $atributLink ?>><?= e($labelTombol) ?></a>

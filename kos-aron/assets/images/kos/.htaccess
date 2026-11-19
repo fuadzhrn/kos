@@ -1,0 +1,16 @@
+# Folder unggahan foto kamar: hanya berkas gambar, TIDAK PERNAH menjalankan PHP.
+# (Pertahanan berlapis -- validasi MIME/ekstensi di includes/upload.php
+# sudah menolak file bukan gambar sebelum sampai ke folder ini.)
+
+php_flag engine off
+
+<IfModule mod_php.c>
+    php_admin_flag engine off
+</IfModule>
+<IfModule mod_php7.c>
+    php_admin_flag engine off
+</IfModule>
+
+<FilesMatch "\.(php|phtml|php\d|phar|pl|py|cgi|asp|aspx|sh)$">
+    Require all denied
+</FilesMatch>

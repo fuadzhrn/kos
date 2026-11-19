@@ -1,21 +1,17 @@
 <?php
 require_once __DIR__ . '/../includes/config.php';
-require_role('admin', '../login.php');
+$admin = require_role('admin', '../login.php');
 
 $judulHalaman = 'Pengaturan';
 $menuAktif    = 'pengaturan';
-$namaAdminAkun = 'Admin Kos Aron'; // dummy -- sama dengan yang tampil di topbar (includes/header.php)
-
-/*
- * PROTOTYPE UI: TIDAK ADA penyimpanan nyata di kedua form berikut.
- * Konstanta di includes/config.php TIDAK bisa diubah dari sini (PHP const
- * memang tidak bisa ditulis ulang saat runtime) -- form ini hanya menampilkan
- * nilainya SEKARANG dan memeriksa bentuk isian baru, tanpa menyimpan apa pun.
- * Nanti (backend): kolom pengaturan di tabel `pengaturan` (satu baris) untuk
- * info kos, dan verifikasi password lama + password_hash() untuk password admin.
- */
+$namaAdminAkun = $admin['nama'];
+$kosDisimpan = $_SESSION['kos_disimpan'] ?? false;
+unset($_SESSION['kos_disimpan']);
 $metode    = $_SERVER['REQUEST_METHOD'] ?? 'GET';
-$csrfValid = $metode !== 'POST' || csrf_valid($_POST['csrf_token'] ?? null);
+$csrfValid = $metode !== 'POST' || (is_string($_POST['csrf_token'] ?? null) && csrf_valid($_POST['csrf_token']));
+if (!$csrfValid) {
+    http_response_code(403);
+}
 $aksi      = ($metode === 'POST' && $csrfValid) ? ($_POST['aksi'] ?? '') : '';
 
 // --- Form Informasi Kos: default-nya tampilkan konfigurasi saat ini. ---
@@ -33,7 +29,11 @@ $dikirimKos = false;
 if ($aksi === 'simpan_kos') {
     $dikirimKos = true;
     foreach (array_keys($nilaiKos) as $kunci) {
-        $nilaiKos[$kunci] = trim((string) ($_POST[$kunci] ?? ''));
+        if (!is_string($_POST[$kunci] ?? null)) {
+            $galatKos[] = 'Isian formulir tidak lengkap.';
+            break;
+        }
+        $nilaiKos[$kunci] = trim($_POST[$kunci]);
     }
 
     if ($nilaiKos['nama_kos'] === '' || mb_strlen($nilaiKos['nama_kos']) > 100) {
@@ -42,14 +42,30 @@ if ($aksi === 'simpan_kos') {
     if (mb_strlen($nilaiKos['deskripsi']) > 500) {
         $galatKos[] = 'Deskripsi kos maksimal 500 karakter.';
     }
-    if ($nilaiKos['whatsapp'] !== '' && !preg_match('/^[0-9]{8,15}$/', $nilaiKos['whatsapp'])) {
+    if ($nilaiKos['whatsapp'] !== '' && !preg_match('/^[1-9][0-9]{7,14}$/D', $nilaiKos['whatsapp'])) {
         $galatKos[] = 'Nomor WhatsApp hanya boleh angka (kode negara tanpa +), 8 sampai 15 digit. Contoh: 62812xxxxxxx.';
     }
-    if ($nilaiKos['maps_link'] !== '' && !str_starts_with($nilaiKos['maps_link'], 'https://')) {
-        $galatKos[] = 'Link Google Maps harus diawali https://';
+    if ($nilaiKos['maps_link'] !== '' && !maps_diizinkan($nilaiKos['maps_link'])) {
+        $galatKos[] = 'Gunakan tautan HTTPS resmi Google Maps.';
     }
-    if ($nilaiKos['maps_embed'] !== '' && !str_starts_with($nilaiKos['maps_embed'], 'https://www.google.com/maps/embed')) {
+    if ($nilaiKos['maps_embed'] !== '' && !maps_diizinkan($nilaiKos['maps_embed'], true)) {
         $galatKos[] = 'Kode sematan peta harus URL embed resmi Google Maps (diawali https://www.google.com/maps/embed).';
+    }
+    if (mb_strlen($nilaiKos['alamat']) > 200) {
+        $galatKos[] = 'Alamat maksimal 200 karakter.';
+    }
+    if (!$galatKos) {
+        try {
+            simpan_pengaturan_kos($nilaiKos, $_FILES['foto_kos'] ?? [], $admin['id']);
+            $_SESSION['kos_disimpan'] = true;
+            header('Location: pengaturan.php', true, 303);
+            exit;
+        } catch (DomainException $e) {
+            $galatKos[] = $e->getMessage();
+        } catch (Throwable $e) {
+            error_log('[pengaturan] ' . $e->getMessage());
+            $galatKos[] = 'Pengaturan gagal disimpan. Silakan coba kembali.';
+        }
     }
 }
 
@@ -83,7 +99,7 @@ require __DIR__ . '/includes/header.php';
 
 <div class="admin-page-head">
     <h1>Pengaturan</h1>
-    <p>Informasi Kos Aron yang tampil di website publik, dan akun admin.</p>
+    <p>Informasi kos yang tampil di website publik, dan akun admin.</p>
 </div>
 
 <!-- Informasi Kos -->
@@ -96,17 +112,13 @@ require __DIR__ . '/includes/header.php';
             <?php endforeach; ?>
         </ul>
     </div>
-<?php elseif ($dikirimKos): ?>
-    <p class="notice notice--peringatan" role="status">
-        <strong>Isian valid, tetapi pengaturan belum disimpan.</strong> Penyimpanan pengaturan kos akan aktif setelah integrasi backend.
-    </p>
+<?php elseif ($kosDisimpan): ?>
+    <p class="notice notice--berhasil" role="status">Pengaturan website berhasil disimpan.</p>
 <?php elseif (!$csrfValid): ?>
     <p class="notice notice--galat" role="alert">Sesi formulir sudah tidak valid. Muat ulang halaman ini dan coba lagi.</p>
-<?php else: ?>
-    <p class="notice">Form di bawah menampilkan konfigurasi website saat ini (includes/config.php). Penyimpanan perubahan akan aktif setelah integrasi backend.</p>
 <?php endif; ?>
 
-<form method="post" action="pengaturan.php" class="panel form-panel form-panel--berkepala mt-section">
+<form method="post" enctype="multipart/form-data" action="pengaturan.php" class="panel form-panel form-panel--berkepala mt-section">
     <div class="panel__head">
         <h2>Informasi Kos</h2>
     </div>
@@ -157,7 +169,7 @@ require __DIR__ . '/includes/header.php';
             <div class="form-group form-grid__penuh">
                 <label for="foto_kos">Foto Utama Kos</label>
                 <div class="foto-sekarang">
-                    <img src="../<?= e(url_foto(FOTO_BANGUNAN_KOS, PATH_FOTO_KOS)) ?>" alt="Foto utama Kos Aron saat ini"
+                    <img src="../<?= e(url_foto(FOTO_BANGUNAN_KOS, PATH_FOTO_KOS)) ?>" alt="Foto utama kos saat ini"
                          data-fallback="../<?= e(FOTO_PLACEHOLDER) ?>">
                     <span class="teks-catatan">Foto saat ini. Kosongkan pilihan file jika tidak ingin mengganti.</span>
                 </div>

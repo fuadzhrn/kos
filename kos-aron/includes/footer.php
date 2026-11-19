@@ -3,7 +3,7 @@
 <footer class="site-footer">
     <div class="container footer-grid">
         <div class="footer-info">
-            <p class="footer-brand">KOS ARON</p>
+            <p class="footer-brand"><?= e(mb_strtoupper(SITE_NAME)) ?></p>
             <p><?= e(SITE_LOCATION_FULL) ?></p>
             <p class="footer-note">Informasi kamar dan harga dapat berubah. Silakan hubungi pemilik untuk memastikan.</p>
         </div>

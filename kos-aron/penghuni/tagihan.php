@@ -1,6 +1,5 @@
 <?php
-require_once __DIR__ . '/../includes/config.php';
-require_role('penghuni', '../login.php');
+require_once __DIR__ . '/includes/konteks.php';
 require_once __DIR__ . '/../data/tagihan.php'; // juga memuat data penghuni, kamar & pembayaran
 
 $judulHalaman = 'Tagihan';
@@ -8,14 +7,12 @@ $menuAktif    = 'tagihan';
 
 require __DIR__ . '/includes/header.php';
 
-// $penghuniLogin sudah disiapkan oleh includes/header.php (lihat get_penghuni_login()).
-$kamarSaya       = $penghuniLogin ? get_kamar_by_id($penghuniLogin['kamar_id']) : null;
 $tagihanBerjalan = $penghuniLogin ? get_tagihan_berjalan($penghuniLogin['id']) : null;
 $riwayatTagihan  = $penghuniLogin ? get_tagihan_by_penghuni($penghuniLogin['id']) : [];
 
 if ($penghuniLogin !== null) {
     $kontak      = link_hubungi_pemilik(
-        'Halo, saya penghuni Kamar ' . ($kamarSaya['nomor'] ?? '-') . ' dan ingin bertanya tentang tagihan sewa saya.',
+        'Halo, saya penghuni Kamar ' . ($penghuniLogin['nomor'] ?? '-') . ' dan ingin bertanya tentang tagihan sewa saya.',
         '../kontak.php'
     );
     $atributLink = $kontak['eksternal'] ? ' target="_blank" rel="noopener"' : '';
@@ -42,7 +39,7 @@ if ($penghuniLogin !== null) {
             <h2>Tagihan Bulan Berjalan</h2>
         </div>
         <?php if ($tagihanBerjalan === null): ?>
-            <p class="panel__kosong">Belum ada tagihan untuk Anda saat ini.</p>
+            <p class="panel__kosong">Belum ada tagihan untuk bulan ini.</p>
         <?php else: ?>
             <dl class="info-tabel info-tabel--panel">
                 <div>
@@ -51,7 +48,7 @@ if ($penghuniLogin !== null) {
                 </div>
                 <div>
                     <dt>Nomor Kamar</dt>
-                    <dd><?= $kamarSaya ? 'Kamar ' . e($kamarSaya['nomor']) : '-' ?></dd>
+                    <dd><?= 'Kamar ' . e($tagihanBerjalan['nomor_kamar']) ?></dd>
                 </div>
                 <div>
                     <dt>Nominal Tagihan</dt>

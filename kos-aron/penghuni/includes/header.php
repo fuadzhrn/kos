@@ -10,11 +10,9 @@
  *   $judulHalaman  string  Judul halaman (tab browser & topbar)
  *   $menuAktif     string  dashboard | kamar | tagihan | riwayat | notifikasi | profil
  */
-require_once __DIR__ . '/../../data/penghuni.php';
 
 $judulHalaman  = $judulHalaman ?? 'Dashboard';
 $menuAktif     = $menuAktif ?? '';
-$penghuniLogin = get_penghuni_login();
 $namaPenghuni  = pengguna_login()['nama'] ?? ($penghuniLogin['nama'] ?? 'Penghuni');
 
 $menuPenghuni = [

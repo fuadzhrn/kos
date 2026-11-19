@@ -4,7 +4,7 @@ require_once __DIR__ . '/data/kamar.php';
 
 $judulHalaman  = 'Daftar Kamar';
 $halamanAktif  = 'kamar';
-$deskripsiMeta = 'Daftar kamar Kos Aron di ' . SITE_LOCATION . ' beserta fasilitas, harga sewa, dan status ketersediaan.';
+$deskripsiMeta = 'Daftar kamar ' . SITE_NAME . ' di ' . SITE_LOCATION . ' beserta fasilitas, harga sewa, dan status ketersediaan.';
 
 $daftarKamar = get_semua_kamar();
 $totalKamar  = count($daftarKamar);
@@ -14,8 +14,8 @@ require __DIR__ . '/includes/header.php';
 
 <section class="page-header">
     <div class="container">
-        <h1>Daftar Kamar Kos Aron</h1>
-        <p>Lihat informasi kamar, fasilitas, harga sewa, dan ketersediaan kamar di Kos Aron.</p>
+        <h1>Daftar Kamar <?= e(SITE_NAME) ?></h1>
+        <p>Lihat informasi kamar, fasilitas, harga sewa, dan ketersediaan kamar di <?= e(SITE_NAME) ?>.</p>
     </div>
 </section>
 

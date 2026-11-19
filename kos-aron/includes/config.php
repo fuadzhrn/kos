@@ -7,49 +7,24 @@
 // Zona waktu Sumenep (WIB), dipakai untuk tanggal hari ini & status tagihan terlambat.
 date_default_timezone_set('Asia/Jakarta');
 
-const SITE_NAME     = 'Kos Aron';
+require_once __DIR__ . '/../data/pengaturan.php';
+$pengaturanSitus = pengaturan_website();
+define('SITE_NAME', $pengaturanSitus['nama_kos']);
+define('WHATSAPP_NUMBER', $pengaturanSitus['whatsapp']);
+define('ALAMAT_LENGKAP', $pengaturanSitus['alamat']);
+define('TENTANG_DESKRIPSI_TAMBAHAN', $pengaturanSitus['deskripsi_kos']);
+define('MAPS_EMBED_URL', $pengaturanSitus['maps_embed']);
+define('MAPS_LINK_URL', $pengaturanSitus['maps_link']);
+define('FOTO_BANGUNAN_KOS', $pengaturanSitus['foto_utama']);
 const SITE_LOCATION = 'Kolor, Sumenep';
 const SITE_LOCATION_FULL = SITE_LOCATION . ', Jawa Timur';
-
-/**
- * Nomor WhatsApp pemilik kos.
- * Format: kode negara tanpa tanda + dan tanpa spasi, contoh pola: 62xxxxxxxxxx
- * Biarkan kosong sampai nomor asli dikonfirmasi oleh pemilik.
- * Selama kosong, tombol WhatsApp ditampilkan dalam keadaan nonaktif.
- */
-const WHATSAPP_NUMBER = '';
-
-/**
- * Informasi kontak lain (opsional). Kosongkan jika belum ada data asli;
- * baris/elemen terkait otomatis tidak ditampilkan.
- */
-const ALAMAT_LENGKAP = '';   // contoh pola: 'Jl. ..., Kolor, Sumenep'
-const EMAIL_KONTAK   = '';
-
-/**
- * Peta lokasi (Google Maps).
- * MAPS_EMBED_URL : URL dari Google Maps > Bagikan > Sematkan peta (atribut src iframe),
- *                  harus diawali https://www.google.com/maps/embed
- * MAPS_LINK_URL  : link biasa untuk membuka lokasi di Google Maps (opsional).
- * Selama kosong, halaman Kontak menampilkan placeholder tanpa pin/koordinat.
- */
-const MAPS_EMBED_URL = '';
-const MAPS_LINK_URL  = '';
-
-/**
- * Deskripsi tambahan untuk halaman Tentang (paragraf kedua).
- * Isi berdasarkan keterangan dari pemilik kos. Selama kosong,
- * halaman menampilkan kalimat netral sebagai pengganti.
- */
-const TENTANG_DESKRIPSI_TAMBAHAN = '';
+const EMAIL_KONTAK = '';
 
 /** Folder gambar (relatif terhadap root website). */
 const PATH_FOTO_KAMAR   = 'assets/images/kamar/';
 const PATH_FOTO_KOS     = 'assets/images/kos/';
 const FOTO_PLACEHOLDER  = 'assets/images/placeholder.svg';
 
-/** Nama file foto bangunan kos di assets/images/kos/ (untuk hero beranda). */
-const FOTO_BANGUNAN_KOS = 'bangunan.jpg';
 
 require_once __DIR__ . '/functions.php';
 require_once __DIR__ . '/auth.php';

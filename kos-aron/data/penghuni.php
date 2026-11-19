@@ -2,11 +2,13 @@
 require_once __DIR__ . '/kamar.php';
 
 // Ambil sewa aktif bila ada, lalu sewa terakhir untuk profil arsip.
-const SQL_PROFIL_PENGHUNI = "SELECT p.id, p.nama, p.no_telepon, p.user_id, p.email,
+const SQL_IDENTITAS_PENGHUNI = "SELECT p.id, p.nama, p.no_telepon, p.user_id, p.email,
     COALESCE(u.username, '') AS akun, s.id AS penyewaan_id, s.kamar_id, k.nomor,
     s.tanggal_masuk, s.tanggal_keluar, s.harga_sewa_disepakati, s.hari_jatuh_tempo,
     IF(s.status = 'aktif', 'aktif', 'tidak_aktif') AS status
-    FROM penghuni p LEFT JOIN users u ON u.id = p.user_id
+    FROM penghuni p LEFT JOIN users u ON u.id = p.user_id";
+
+const SQL_PROFIL_PENGHUNI = SQL_IDENTITAS_PENGHUNI . "
     LEFT JOIN penyewaan s ON s.id = (SELECT r.id FROM penyewaan r WHERE r.penghuni_id = p.id
         ORDER BY (r.status = 'aktif') DESC, r.tanggal_masuk DESC, r.id DESC LIMIT 1)
     LEFT JOIN kamar k ON k.id = s.kamar_id";
@@ -36,7 +38,10 @@ function get_penghuni_login(): ?array
     if (($user['role'] ?? null) !== 'penghuni') {
         return null;
     }
-    $stmt = koneksi_database()->prepare(SQL_PROFIL_PENGHUNI . " WHERE p.user_id = ? AND u.status = 'aktif' AND s.status = 'aktif'");
+    $stmt = koneksi_database()->prepare(SQL_IDENTITAS_PENGHUNI . "
+        LEFT JOIN penyewaan s ON s.penghuni_aktif_unik = p.id
+        LEFT JOIN kamar k ON k.id = s.kamar_id
+        WHERE p.user_id = ? AND u.role = 'penghuni' AND u.status = 'aktif'");
     $stmt->execute([$user['id']]);
     return $stmt->fetch() ?: null;
 }
@@ -73,9 +78,7 @@ function simpan_penghuni(?int $id, array $nilai, string $password, int $adminId)
     $nama = $nilai['nama'];
     $telepon = $nilai['no_telepon'];
     $akun = $nilai['akun'];
-    if ($nama === '' || mb_strlen($nama) > 100 || !preg_match('/^[0-9+\- ]{8,20}$/D', $telepon)) {
-        throw new DomainException('Periksa nama (maksimal 100 karakter) dan nomor telepon (8–20 karakter).');
-    }
+    validasi_identitas_penghuni($nama, $telepon);
     $db = koneksi_database();
     $db->beginTransaction();
     try {
@@ -86,9 +89,7 @@ function simpan_penghuni(?int $id, array $nilai, string $password, int $adminId)
         $mulai = !$aktif && ($id === null || $nilai['mulai_sewa'] === '1');
         $butuhAkun = $userId !== null || $mulai || $akun !== '' || $password !== '' || $aktif !== null;
         if ($butuhAkun) {
-            if (!preg_match('/^[a-zA-Z0-9._-]{3,50}$/D', $akun) && !(strlen($akun) <= 50 && filter_var($akun, FILTER_VALIDATE_EMAIL))) {
-                throw new DomainException('Isi username 3–50 karakter atau email maksimal 50 karakter.');
-            }
+            validasi_username_penghuni($akun);
             if (($userId === null || $password !== '') && (strlen($password) < 8 || strlen($password) > 72 || str_contains($password, "\0"))) {
                 throw new DomainException('Gunakan password 8–72 byte.');
             }
@@ -182,4 +183,83 @@ function akhiri_penyewaan(int $id, int $sewaId, string $tanggal): void
         }
         throw $error;
     }
+}
+
+function validasi_identitas_penghuni(string $nama, string $telepon): void
+{
+    if ($nama === '' || mb_strlen($nama) > 100 || !preg_match('/^[0-9+\- ]{8,20}$/D', $telepon)) {
+        throw new DomainException('Periksa nama (maksimal 100 karakter) dan nomor telepon (8–20 karakter).');
+    }
+}
+
+function validasi_username_penghuni(string $akun): void
+{
+    if (!preg_match('/^[a-zA-Z0-9._-]{3,50}$/D', $akun) && !(strlen($akun) <= 50 && filter_var($akun, FILTER_VALIDATE_EMAIL))) {
+        throw new DomainException('Isi username 3–50 karakter atau email maksimal 50 karakter.');
+    }
+}
+
+/** Pemilik profil ditentukan oleh akun dalam sesi. */
+function ubah_profil_sendiri(string $nama, string $telepon, string $akun): void
+{
+    validasi_identitas_penghuni($nama, $telepon);
+    validasi_username_penghuni($akun);
+    $userId = pengguna_login()['id'];
+    $db = koneksi_database();
+    $db->beginTransaction();
+    try {
+        $stmt = $db->prepare("SELECT p.id FROM penghuni p JOIN users u ON u.id = p.user_id
+            WHERE u.id = ? AND u.role = 'penghuni' AND u.status = 'aktif' FOR UPDATE");
+        $stmt->execute([$userId]);
+        $id = $stmt->fetchColumn();
+        if (!$id) {
+            throw new DomainException('Profil penghuni tidak tersedia.');
+        }
+        $stmt = $db->prepare('SELECT id FROM penghuni WHERE email = ? AND id <> ? LIMIT 1');
+        $stmt->execute([$akun, $id]);
+        if ($stmt->fetchColumn()) {
+            throw new DomainException('Identitas login sudah dipakai.');
+        }
+        $db->prepare('UPDATE penghuni SET nama = ?, no_telepon = ? WHERE user_id = ?')->execute([$nama, $telepon, $userId]);
+        $db->prepare('UPDATE users SET nama = ?, username = ? WHERE id = ?')->execute([$nama, $akun, $userId]);
+        $db->commit();
+    } catch (Throwable $e) {
+        if ($db->inTransaction()) {
+            $db->rollBack();
+        }
+        if ($e instanceof PDOException && (int)($e->errorInfo[1] ?? 0) === 1062) {
+            throw new DomainException('Identitas login sudah dipakai.');
+        }
+        throw $e;
+    }
+    $_SESSION['user']['nama'] = $nama;
+    $_SESSION['user']['username'] = $akun;
+}
+
+function ubah_password_penghuni(string $lama, string $baru, string $konfirmasi): void
+{
+    if (mb_strlen($baru) < 8 || strlen($baru) > 72 || str_contains($baru, "\0") || $baru !== $konfirmasi) {
+        throw new DomainException('Gunakan password baru minimal 8 karakter, maksimal 72 byte, dan konfirmasi yang sama.');
+    }
+    $db = koneksi_database();
+    $userId = pengguna_login()['id'];
+    $stmt = $db->prepare("SELECT password_hash FROM users WHERE id = ? AND role = 'penghuni' AND status = 'aktif'");
+    $stmt->execute([$userId]);
+    $hash = $stmt->fetchColumn();
+    if (!$hash || str_contains($lama, "\0") || !password_verify($lama, $hash)) {
+        throw new DomainException('Password lama tidak sesuai.');
+    }
+    if (password_verify($baru, $hash)) {
+        throw new DomainException('Pilih password baru yang berbeda dari password saat ini.');
+    }
+    $hashBaru = password_hash($baru, PASSWORD_DEFAULT);
+    $stmt = $db->prepare("UPDATE users SET password_hash = ? WHERE id = ? AND BINARY password_hash = ?
+        AND role = 'penghuni' AND status = 'aktif'");
+    $stmt->execute([$hashBaru, $userId, $hash]);
+    if ($stmt->rowCount() !== 1) {
+        throw new DomainException('Data akun berubah. Muat ulang sebelum mengganti password.');
+    }
+    session_regenerate_id(true);
+    $_SESSION['sidik_password'] = hash('sha256', $hashBaru);
+    unset($_SESSION['csrf_token']);
 }

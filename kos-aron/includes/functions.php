@@ -158,14 +158,14 @@ function url_whatsapp(string $pesan = ''): ?string
 function url_maps_embed(): ?string
 {
     $url = trim(MAPS_EMBED_URL);
-    return str_starts_with($url, 'https://www.google.com/maps/embed') ? $url : null;
+    return maps_diizinkan($url, true) ? $url : null;
 }
 
 /** Link "buka di Google Maps", atau null jika belum diatur / bukan https. */
 function url_maps_link(): ?string
 {
     $url = trim(MAPS_LINK_URL);
-    return str_starts_with($url, 'https://') ? $url : null;
+    return maps_diizinkan($url) ? $url : null;
 }
 
 /** Nomor WhatsApp untuk ditampilkan (contoh: +62xxxx), atau null jika belum diatur. */

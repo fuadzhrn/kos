@@ -3,11 +3,11 @@ require_once __DIR__ . '/includes/config.php';
 
 $judulHalaman  = 'Kontak';
 $halamanAktif  = 'kontak';
-$deskripsiMeta = 'Kontak pemilik Kos Aron di ' . SITE_LOCATION . ' untuk menanyakan informasi kamar dan penyewaan.';
+$deskripsiMeta = 'Kontak pemilik ' . SITE_NAME . ' di ' . SITE_LOCATION . ' untuk menanyakan informasi kamar dan penyewaan.';
 
 // Semua data kontak diambil dari includes/config.php
 $nomorWa   = nomor_whatsapp_tampil();
-$pesanWa   = 'Halo, saya ingin menanyakan informasi kamar di Kos Aron.';
+$pesanWa   = 'Halo, saya ingin menanyakan informasi kamar di ' . SITE_NAME . '.';
 $urlWa     = url_whatsapp($pesanWa);
 $mapsEmbed = url_maps_embed();
 $mapsLink  = url_maps_link();
@@ -19,7 +19,7 @@ require __DIR__ . '/includes/header.php';
 
 <section class="page-header">
     <div class="container">
-        <h1>Hubungi Kos Aron</h1>
+        <h1>Hubungi <?= e(SITE_NAME) ?></h1>
         <p>Silakan hubungi pemilik kos untuk menanyakan informasi kamar dan penyewaan.</p>
     </div>
 </section>
@@ -78,12 +78,12 @@ require __DIR__ . '/includes/header.php';
                 <div class="peta">
                     <?php if ($mapsEmbed !== null): ?>
                         <iframe src="<?= e($mapsEmbed) ?>"
-                                title="Peta lokasi Kos Aron"
+                                title="Peta lokasi <?= e(SITE_NAME) ?>"
                                 loading="lazy"
                                 referrerpolicy="no-referrer-when-downgrade"
                                 allowfullscreen></iframe>
                     <?php else: ?>
-                        <p class="peta__kosong">Peta lokasi akan ditampilkan setelah alamat Kos Aron dilengkapi.</p>
+                        <p class="peta__kosong">Peta lokasi akan ditampilkan setelah alamat <?= e(SITE_NAME) ?> dilengkapi.</p>
                     <?php endif; ?>
                 </div>
                 <?php if ($mapsLink !== null): ?>

@@ -266,3 +266,14 @@ function hapus_kamar(int $id): array
 
     return ['berhasil' => true, 'pesan' => null];
 }
+
+
+/** Kamar yang ditempati profil dari sesi penghuni, termasuk fasilitas dan foto. */
+function get_kamar_aktif_penghuni(int $penghuniId): ?array
+{
+    $stmt = koneksi_database()->prepare("SELECT k.*, 'terisi' AS status_terhitung
+        FROM penyewaan s JOIN kamar k ON k.id = s.kamar_id WHERE s.penghuni_aktif_unik = ?");
+    $stmt->execute([$penghuniId]);
+    $baris = $stmt->fetch();
+    return $baris ? baris_kamar_ke_array($baris) : null;
+}

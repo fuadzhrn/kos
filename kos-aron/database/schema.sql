@@ -235,6 +235,7 @@ CREATE TABLE notifikasi (
     penghuni_id BIGINT UNSIGNED NOT NULL,
     tagihan_id  BIGINT UNSIGNED NULL,
     tipe        ENUM('pengingat', 'terlambat', 'lunas') NOT NULL,
+    peristiwa   VARCHAR(40) NOT NULL DEFAULT 'lama',
     judul       VARCHAR(100)    NOT NULL,
     pesan       TEXT            NOT NULL,
     tanggal     DATE            NOT NULL,
@@ -242,7 +243,7 @@ CREATE TABLE notifikasi (
     dibaca_pada DATETIME        NULL,
     created_at  TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (id),
-    UNIQUE KEY uq_notifikasi_tagihan_tipe (tagihan_id, tipe),
+    UNIQUE KEY uq_notifikasi_peristiwa (tagihan_id, tipe, peristiwa),
     KEY idx_notifikasi_penghuni_dibaca (penghuni_id, dibaca),
     CONSTRAINT fk_notifikasi_penghuni
         FOREIGN KEY (penghuni_id) REFERENCES penghuni (id)

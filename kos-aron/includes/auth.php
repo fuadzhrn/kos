@@ -88,6 +88,7 @@ function login_berhasil(array $baris): void
     // dipakai untuk membajak sesi yang sudah terautentikasi (session fixation).
     session_regenerate_id(true);
 
+    $_SESSION['sidik_password'] = hash('sha256', $baris['password_hash']);
     $_SESSION['user'] = [
         'id'       => (int) $baris['id'],
         'username' => $baris['username'],
@@ -166,18 +167,16 @@ function require_role(string $peranDibutuhkan, string $urlLogin = 'login.php'): 
         exit;
     }
 
-    if ($peranDibutuhkan === 'penghuni') {
-        require_once __DIR__ . '/koneksi.php';
-        $stmt = koneksi_database()->prepare("SELECT nama FROM users WHERE id = ? AND role = 'penghuni' AND status = 'aktif'");
-        $stmt->execute([$pengguna['id']]);
-        $nama = $stmt->fetchColumn();
-        if ($nama === false) {
-            logout_sesi();
-            header('Location: ' . $urlLogin . '?alasan=harus-login');
-            exit;
-        }
-        $_SESSION['user']['nama'] = $pengguna['nama'] = $nama;
+    require_once __DIR__ . '/koneksi.php';
+    $stmt = koneksi_database()->prepare("SELECT nama, password_hash FROM users WHERE id = ? AND role = ? AND status = 'aktif'");
+    $stmt->execute([$pengguna['id'], $peranDibutuhkan]);
+    $akun = $stmt->fetch();
+    if (!$akun || !hash_equals(hash('sha256', $akun['password_hash']), $_SESSION['sidik_password'] ?? '')) {
+        logout_sesi();
+        header('Location: ' . $urlLogin . '?alasan=harus-login');
+        exit;
     }
+    $_SESSION['user']['nama'] = $pengguna['nama'] = $akun['nama'];
     return $pengguna;
 }
 

@@ -1,6 +1,5 @@
 <?php
-require_once __DIR__ . '/../includes/config.php';
-require_role('penghuni', '../login.php');
+require_once __DIR__ . '/includes/konteks.php';
 require_once __DIR__ . '/../data/tagihan.php'; // juga memuat data penghuni, kamar & pembayaran
 
 $judulHalaman = 'Kamar Saya';
@@ -8,8 +7,7 @@ $menuAktif    = 'kamar';
 
 require __DIR__ . '/includes/header.php';
 
-// $penghuniLogin sudah disiapkan oleh includes/header.php (lihat get_penghuni_login()).
-$kamarSaya       = $penghuniLogin ? get_kamar_by_id($penghuniLogin['kamar_id']) : null;
+$kamarSaya       = $penghuniLogin ? get_kamar_aktif_penghuni($penghuniLogin['id']) : null;
 $tagihanBerjalan = $penghuniLogin ? get_tagihan_berjalan($penghuniLogin['id']) : null;
 
 if ($penghuniLogin !== null) {
@@ -29,8 +27,8 @@ if ($penghuniLogin !== null) {
 <?php if ($penghuniLogin === null || $kamarSaya === null): ?>
 
     <div class="admin-placeholder">
-        <strong>Belum ada data kamar</strong>
-        Tidak ada informasi kamar yang bisa ditampilkan saat ini.
+        <strong>Belum ada penyewaan aktif</strong>
+        Kamar akan tampil setelah admin mencatat penyewaan aktif Anda.
     </div>
 
 <?php else: ?>
@@ -83,7 +81,7 @@ if ($penghuniLogin !== null) {
             </div>
             <div>
                 <dt>Tanggal Jatuh Tempo Pembayaran</dt>
-                <dd><?= $tagihanBerjalan ? e(format_tanggal($tagihanBerjalan['jatuh_tempo'])) : '-' ?></dd>
+                <dd><?= $tagihanBerjalan ? e(format_tanggal($tagihanBerjalan['jatuh_tempo'])) : 'Tanggal ' . (int)$penghuniLogin['hari_jatuh_tempo'] . ' setiap bulan' ?></dd>
             </div>
             <div>
                 <dt>Status Penyewaan</dt>

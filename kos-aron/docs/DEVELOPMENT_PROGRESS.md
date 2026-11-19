@@ -119,3 +119,49 @@ Migrasi menambah tabel pembayaran_audit, status pembayaran dan indeks unik untuk
 MySQL Laragon sempat berhenti pada sesi lanjutan dan dijalankan kembali menggunakan my.ini yang sudah ada. Git berada di main. Backup otomatis 1eb32be sudah mencakup implementasi inti. Migrasi dan pembaruan handover tersedia di working tree saat penyelesaian tahap. database/seed.sql telah berstatus untracked sebelum pekerjaan ini.
 
 Tahap berikutnya adalah Tahap 8, integrasi dan verifikasi area penghuni, termasuk penggantian password oleh penghuni. Pengujian responsif menyeluruh tetap dijadwalkan pada Tahap 10.
+
+## 19 November 2026 — Tahap 8 selesai
+
+### Halaman dan batas akses
+
+- Dashboard dan Kamar Saya mengambil penyewaan aktif dari profil milik akun di sesi. Harga bulanan mengikuti perjanjian. Tagihan bulan berjalan dibatasi bulan dan tahun saat ini pada zona waktu aplikasi.
+- Tagihan menampilkan seluruh riwayat milik penghuni dan petunjuk membayar langsung kepada pemilik. Riwayat Pembayaran mempertahankan filter bulan/tahun dan modal detail. Server membatasi detail sejak query MySQL berdasarkan pembayaran, profil sesi dan status transaksi sah.
+- Notifikasi memakai baris tersimpan di MySQL, termasuk isi pesan dan status baca. Dashboard menampilkan notifikasi terbaru dari sumber yang sama.
+- Profil dapat memperbarui nama, nomor telepon, serta username/email pada kolom identitas login yang sudah tersedia. Perubahan users dan penghuni dibuat dalam satu transaksi. Penggantian password menggunakan verifikasi hash lama dan pembaruan bersyarat agar perubahan bersamaan tidak menimpa password baru. Sesi lain akun tersebut harus login kembali.
+- Semua halaman memeriksa role penghuni dan menggunakan konteks akun di server sebelum memproses input. Form profil hanya menerima kolom yang diizinkan dan CSRF yang sah. Detail di luar cakupan profil mendapat respons 404 yang sama dengan detail yang tidak tersedia. Tidak ada migrasi Tahap 8.
+
+### File
+
+- Enam halaman di penghuni/ meliputi index.php, kamar.php, tagihan.php, riwayat.php, notifikasi.php dan profil.php.
+- penghuni/includes/konteks.php dibuat untuk identitas sesi. penghuni/includes/header.php memakai konteks yang sudah diverifikasi.
+- data/kamar.php, data/penghuni.php, data/tagihan.php, data/pembayaran.php dan data/notifikasi.php menangani pembacaan terikat profil serta pembaruan akun. includes/auth.php memeriksa perubahan password pada sesi penghuni.
+- docs/CODEX_HANDOFF.md dan docs/DEVELOPMENT_PROGRESS.md diperbarui.
+
+### Pengujian aktual
+
+Server PHP loopback dan database MySQL uji sementara digunakan untuk 37 pemeriksaan HTTP/database. Dua akun dengan kamar, harga, pesan dan kuitansi berbeda membuka keenam halaman. Akun ketiga yang aktif hanya memiliki sewa historis. Akun admin mencatat pembayaran lewat halaman admin yang sudah tersedia. Database uji dibersihkan setelah pengujian.
+
+| Skenario | Hasil |
+|---|---|
+| Isolasi dan peran | Dua akun melihat data masing-masing pada enam halaman. Detail sendiri dapat dibuka. Detail milik akun lain mendapat 404. Parameter pengganti identitas, kolom role dan endpoint admin ditolak. Tamu diarahkan ke login. |
+| Masa sewa dan tagihan | Kartu bulan berjalan kosong ketika hanya tersedia tagihan lama. Harga mengikuti kesepakatan. Profil tanpa sewa aktif tidak menampilkan kamar lama, sementara profil dan riwayat tetap tersedia. |
+| Pembayaran dan notifikasi | Pembayaran admin mengubah kartu tagihan menjadi Lunas dan muncul di riwayat akun terkait. Pembayaran lama yang kurang dari nominal penuh tidak diberi label Lunas. Pesan dari tabel notifikasi muncul di daftar dan dashboard pemiliknya. |
+| Profil dan password | Form menolak CSRF tidak valid, telepon tidak valid, identitas login duplikat, password lama salah dan konfirmasi berbeda. Nama, nomor dan akun baru tersimpan. Password baru tersimpan sebagai hash, sesi pengubah dirotasi, dan sesi lain akun yang sama berakhir. Akun penghuni lain tetap dapat digunakan. |
+| Chrome | Tujuh pemeriksaan pada riwayat berbasis data uji lulus, termasuk filter bulan, filter gabungan bulan/tahun, membuka/menutup modal detail dan memulihkan seluruh baris. |
+| Pemeriksaan statis | PHP lint lulus pada 45 file, node --check pada admin.js lulus, git diff --check lulus, dan uji PDO pada database aplikasi berhasil. |
+
+Uji awal menangkap kartu yang masih memakai tagihan lama ketika bulan kini belum ditagih. Putaran akhir lulus 37/37 pemeriksaan HTTP/MySQL dan 7/7 pemeriksaan Chrome. Uji tampilan responsif menyeluruh tetap dijadwalkan di Tahap 10. Konfigurasi Git dan proses backup tetap mengikuti proyek pada branch main. Tahap 9 menunggu permintaan berikutnya.
+
+## 19 November 2026 — Tahap 9 selesai
+
+Pengujian integrasi menggunakan PHP 8.3, MySQL 8.4, dua sesi penghuni dan satu sesi admin. Skrip `scripts/uji-tahap-09.py` menyalin aplikasi ke direktori sementara, membuat skema uji khusus, menjalankan HTTP lokal, dan membersihkannya. Jalankan dari root dengan `python scripts/uji-tahap-09.py` menggunakan Python 3 yang memiliki pustaka standar, PHP CLI di PATH serta Chrome. Di Laragon lokal pengujian memakai Python 3.13 dari direktori bin. Chrome alternatif dapat ditentukan melalui CHROME_BIN.
+
+| Bagian | Hasil verifikasi |
+|---|---|
+| Notifikasi | Migrasi mempertahankan status baca. Hari H-7, H-3, tanggal jatuh tempo, hari terlambat serta pengulangan CLI sesuai hasil yang diharapkan. Perubahan status baca menurunkan penghitung tepat satu. Pemilik lain dan token CSRF salah ditolak. |
+| Pembayaran | Notifikasi lunas langsung tampil. Setelah pembatalan, informasi tersebut tersembunyi. Pembayaran pengganti menghasilkan tepat satu pemberitahuan lunas yang berlaku. |
+| Laporan | Pada data uji Oktober total tagihan Rp 1.700.000, diterima Rp 1.150.000, tersisa Rp 550.000. Seluruh periode menghasilkan Rp 4.000.000, Rp 2.350.000 dan Rp 1.650.000. Filter tahun, penghuni lama, hunian historis, dan cetak laporan bulanan ke PDF melalui Chrome lulus. |
+| Pengaturan publik | Nama, deskripsi, alamat, nomor WhatsApp, tautan Maps dan foto PNG berhasil disimpan. Foto tampil pada Beranda dan Tentang serta dapat diunduh dengan isi yang sama. Penyimpanan teks berikutnya mempertahankan foto. Nomor, tautan, tipe unggahan dan CSRF yang tidak valid ditolak. |
+| Akses | Penghuni ditolak saat membuka laporan atau mengirim pengaturan. Akses HTTP ke generator CLI ditolak. Log server uji bersih dari warning dan fatal error PHP. |
+
+Putaran akhir lulus 19 kelompok pemeriksaan. Lint 48 file PHP dan pemeriksaan sintaks admin.js lulus. Perubahan skema lokal mempertahankan 7 notifikasi, termasuk 3 yang sudah dibaca. Eksekusi manual CLI pada 19 November 2026 pukul 22.53 WIB menghasilkan 0 notifikasi baru. Pengujian scheduler berkala menunggu pemasangan sesuai [panduan scheduler](09-notifikasi-dan-scheduler.md).

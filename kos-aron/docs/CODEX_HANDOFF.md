@@ -74,3 +74,21 @@ Dari Detail Pembayaran, admin dapat mengoreksi tanggal, metode, keterangan atau 
 Database kini memiliki sembilan tabel. pembayaran.status membedakan sah dan dibatalkan. Indeks unik uq_pembayaran_tagihan_aktif memakai kolom generated tagihan_aktif_unik untuk menjaga satu pembayaran sah per tagihan. pembayaran_audit memuat ID pembayaran, tindakan, admin, waktu, alasan koreksi/pembatalan, dan salinan JSON sebelum/sesudah. Pencatatan dan audit berada dalam satu transaksi. Nilai awal tiga pembayaran lokal dipertahankan dan tidak dibuatkan catatan audit fiktif.
 
 Instalasi baru memakai database/schema.sql. Untuk memperbarui instalasi Tahap 6, pilih database aplikasi dan jalankan database/migrasi-07-pembayaran.sql. Migrasi sudah diterapkan pada db_kos_aron lokal dan diuji dijalankan dua kali di database terpisah. Daftar file dan hasil uji tersedia di DEVELOPMENT_PROGRESS.md. Lanjutkan Tahap 8 saat diminta.
+
+## Tahap 8 selesai — Dashboard Penghuni
+
+Enam halaman penghuni memakai profil yang diperoleh melalui users.id di sesi dan penghuni.user_id. Dashboard menampilkan sewa aktif, tagihan bulan kalender berjalan, tiga penerimaan sah terbaru dan notifikasi terbaru. Tanpa tagihan bulan berjalan, kartu menampilkan pesan kosong. Akun yang masih aktif tanpa penyewaan aktif dapat melihat profil dan riwayat miliknya. Kamar Saya memberi pesan bahwa belum ada penyewaan aktif. Akun yang dinonaktifkan saat keluar tetap ditolak sesuai Tahap 5.
+
+Tagihan dan pembayaran sepanjang riwayat mengikuti penyewaan asal. Filter bulan dan tahun di Riwayat memakai periode tagihan. Permintaan detail hanya dapat membaca pembayaran sah pemilik sesi. ID yang di luar cakupan profil menghasilkan HTTP 404. Notifikasi menampilkan judul, pesan, tanggal dan status baca dari tabel notifikasi. Pembuatan pengingat dan perubahan status baca tetap menjadi pekerjaan Tahap 9.
+
+Form Profil Saya menyimpan nama, nomor telepon dan identitas login (username yang juga boleh berbentuk email). Form password memeriksa password lama, mencocokkan konfirmasi, dan menyimpan hash. Perubahan password merotasi ID sesi dan token CSRF serta mengakhiri sesi lain akun itu pada akses berikutnya. Sesi penghuni dari sebelum Tahap 8 perlu login ulang sekali. Tidak diperlukan migrasi skema.
+
+Pengujian isolasi data dan transaksi tercatat di DEVELOPMENT_PROGRESS.md. Tahap berikutnya adalah Tahap 9 setelah diminta.
+
+## 19 November 2026 — Tahap 9 selesai
+
+Pengingat H-7, H-3, terlambat dan lunas disimpan di MySQL. Dashboard dan halaman notifikasi penghuni memakai identitas sesi untuk daftar, penghitung dan tanda baca. Pembayaran sah membuat informasi lunas di transaksi yang sama. Indeks unik baru sudah diterapkan pada db_kos_aron lokal. Lihat [konfigurasi scheduler](09-notifikasi-dan-scheduler.md) untuk perintah CLI dan pengaturan waktu.
+
+Laporan admin memakai periode tagihan dan pembayaran penuh yang masih sah. Ketika bulan dipilih tanpa tahun, halaman menggunakan tahun berjalan. Hunian kamar mengacu ke akhir periode terpilih atau hari ini jika periode masih berjalan. Untuk seluruh periode, ringkasan hunian memakai hari ini. Perawatan hanya diketahui dari kondisi kamar saat ini. Laporan historis menyebut kamar kosong berdasarkan riwayat sewa.
+
+Admin dapat menyimpan identitas, deskripsi, alamat, WhatsApp, tautan atau sematan Maps, dan foto di Pengaturan. Halaman publik membaca pengaturan pada setiap permintaan. Form password admin yang terpisah masih merupakan prototipe dari tahap sebelumnya. Pengujian akhir menyeluruh dan instrumen SUS masuk Tahap 10.
