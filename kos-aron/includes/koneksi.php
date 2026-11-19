@@ -2,9 +2,7 @@
 /**
  * Koneksi database (PDO) untuk db_kos_aron.
  * ----------------------------------------------------------------
- * Tahap ini HANYA menyediakan fondasi koneksi. Belum ada halaman
- * frontend yang memanggil file ini (lihat docs/04-penyesuaian-frontend.md
- * untuk rencana integrasinya nanti).
+ * Halaman web dan skrip CLI memakai koneksi yang sama melalui fungsi ini.
  *
  * Kredensial TIDAK ditulis di file ini. Nilai DB_HOST/DB_PORT/DB_NAME/
  * DB_USER/DB_PASS diambil dari includes/database.local.php, yang:
@@ -37,9 +35,7 @@ if (!defined('DB_HOST')) {
  * - Prepared statement sungguhan, bukan emulasi (ATTR_EMULATE_PREPARES = false).
  * - Mode exception aktif (ATTR_ERRMODE = ERRMODE_EXCEPTION), supaya setiap
  *   kegagalan query terdeteksi, bukan diam-diam gagal.
- * - Detail error database (PDOException::getMessage(), yang bisa memuat
- *   nama host/kolom) TIDAK pernah ditampilkan ke pengunjung: dicatat ke
- *   error_log(), lalu dilempar ulang sebagai RuntimeException berpesan umum.
+ * - Log koneksi memuat kode galat saja. Pengunjung menerima pesan umum.
  *
  * @throws RuntimeException jika koneksi gagal (pesan aman untuk ditampilkan)
  */
@@ -60,7 +56,7 @@ function koneksi_database(): PDO
             PDO::ATTR_EMULATE_PREPARES   => false,
         ]);
     } catch (PDOException $e) {
-        error_log('[db_kos_aron] Koneksi database gagal: ' . $e->getMessage());
+        error_log('[db_kos_aron] Koneksi database gagal, kode ' . $e->getCode());
         throw new RuntimeException('Tidak dapat terhubung ke database saat ini. Silakan coba lagi nanti.');
     }
 

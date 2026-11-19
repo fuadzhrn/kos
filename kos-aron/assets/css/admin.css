@@ -794,6 +794,11 @@ input[type="file"].form-control {
     min-height: 0;
 }
 
+.modal__body .form-grid > .aksi-grup {
+    grid-column: 1 / -1;
+    flex-wrap: wrap;
+}
+
 .modal__body > .notice {
     margin-bottom: 14px;
 }

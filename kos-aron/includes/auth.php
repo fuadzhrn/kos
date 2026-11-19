@@ -6,12 +6,7 @@
  * penghuni), sehingga sesi PHP selalu aktif sebelum halaman apa pun
  * menghasilkan output.
  *
- * Lingkup tahap ini HANYA: login, sesi, proteksi peran, logout, dan
- * akun admin awal. Konten dashboard (data kamar/penghuni/tagihan yang
- * ditampilkan setelah login) MASIH dari data contoh di data/*.php --
- * BELUM disambungkan ke tabel MySQL (itu adalah pekerjaan tahap CRUD
- * berikutnya, sengaja tidak dikerjakan di sini). Lihat
- * docs/07-login-dan-keamanan.md untuk penjelasan batas ini.
+ * Akun dan peran diverifikasi terhadap tabel users sebelum mengakses halaman pribadi.
  */
 
 /**
@@ -36,6 +31,8 @@ function mulai_sesi(): void
         'httponly' => true,   // Tidak bisa dibaca JavaScript (mitigasi XSS mencuri sesi).
         'samesite' => 'Lax',  // Cukup untuk navigasi biasa, menahan sebagian besar CSRF cross-site.
     ]);
+    ini_set('session.use_strict_mode', '1');
+    ini_set('session.use_only_cookies', '1');
     session_name('KOSARON_SESSION');
     session_start();
 }
@@ -60,7 +57,7 @@ function csrf_field(): string
 }
 
 /** Memeriksa token CSRF yang dikirim form terhadap token di sesi. */
-function csrf_valid(?string $token): bool
+function csrf_valid(mixed $token): bool
 {
     return is_string($token) && $token !== '' && isset($_SESSION['csrf_token'])
         && hash_equals($_SESSION['csrf_token'], $token);
@@ -88,6 +85,7 @@ function login_berhasil(array $baris): void
     // dipakai untuk membajak sesi yang sudah terautentikasi (session fixation).
     session_regenerate_id(true);
 
+    unset($_SESSION['csrf_token']);
     $_SESSION['sidik_password'] = hash('sha256', $baris['password_hash']);
     $_SESSION['user'] = [
         'id'       => (int) $baris['id'],
@@ -262,4 +260,36 @@ function catat_percobaan_login_gagal(string $identitas): void
 function reset_percobaan_login(string $identitas): void
 {
     unset($_SESSION['login_percobaan'][kunci_percobaan_login($identitas)]);
+}
+
+function ubah_password_sendiri(string $lama, string $baru, string $konfirmasi): void
+{
+    if (mb_strlen($baru) < 8 || strlen($baru) > 72 || str_contains($baru, "\0") || $baru !== $konfirmasi) {
+        throw new DomainException('Gunakan password baru minimal 8 karakter, maksimal 72 byte, dan konfirmasi yang sama.');
+    }
+    $db = koneksi_database();
+    $akun = pengguna_login();
+    if (!$akun) {
+        throw new DomainException('Silakan login kembali.');
+    }
+    $userId = $akun['id'];
+    $stmt = $db->prepare("SELECT password_hash FROM users WHERE id = ? AND role = ? AND status = 'aktif'");
+    $stmt->execute([$userId, $akun['role']]);
+    $hash = $stmt->fetchColumn();
+    if (!$hash || str_contains($lama, "\0") || !password_verify($lama, $hash)) {
+        throw new DomainException('Password lama tidak sesuai.');
+    }
+    if (password_verify($baru, $hash)) {
+        throw new DomainException('Pilih password baru yang berbeda dari password saat ini.');
+    }
+    $hashBaru = password_hash($baru, PASSWORD_DEFAULT);
+    $stmt = $db->prepare("UPDATE users SET password_hash = ? WHERE id = ? AND BINARY password_hash = ?
+        AND role = ? AND status = 'aktif'");
+    $stmt->execute([$hashBaru, $userId, $hash, $akun['role']]);
+    if ($stmt->rowCount() !== 1) {
+        throw new DomainException('Data akun berubah. Muat ulang sebelum mengganti password.');
+    }
+    session_regenerate_id(true);
+    $_SESSION['sidik_password'] = hash('sha256', $hashBaru);
+    unset($_SESSION['csrf_token']);
 }

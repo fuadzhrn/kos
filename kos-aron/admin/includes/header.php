@@ -5,8 +5,7 @@
  *   $judulHalaman  string  Judul halaman (tab browser & topbar)
  *   $menuAktif     string  dashboard | kamar | penghuni | tagihan | pembayaran | laporan | pengaturan
  *
- * Catatan: belum ada autentikasi. Nama admin di bawah masih dummy,
- * nanti diambil dari session setelah login dibuat.
+ * Nama admin berasal dari sesi yang telah diperiksa oleh require_role().
  */
 $judulHalaman = $judulHalaman ?? 'Dashboard';
 $menuAktif    = $menuAktif ?? '';

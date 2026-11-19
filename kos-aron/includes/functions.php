@@ -50,7 +50,34 @@ function daftar_foto_kamar(array $kamar): array
         }
     }
 
+    // Identitas tiga kamar contoh publik dari seed. Utamakan seluruh foto dan galeri asli.
+    $contoh = ['1:01' => '01', '2:02' => '02', '4:04' => '03'];
+    $key = $kamar['id'] . ':' . $kamar['nomor'];
+    if (!$hasil && isset($contoh[$key])) {
+        $url = url_foto('kamar-ilustrasi-' . $contoh[$key] . '.webp');
+        if ($url !== FOTO_PLACEHOLDER) {
+            $hasil[] = $url;
+        }
+    }
     return $hasil;
+}
+
+function foto_bangunan_publik(string $ilustrasi): string
+{
+    $foto = url_foto(FOTO_BANGUNAN_KOS, PATH_FOTO_KOS);
+    return $foto === FOTO_PLACEHOLDER ? url_foto($ilustrasi, PATH_FOTO_KOS) : $foto;
+}
+
+function foto_adalah_ilustrasi(string $url): bool
+{
+    return in_array($url, [
+        PATH_FOTO_KOS . 'kos-aron-hero-ilustrasi.webp',
+        PATH_FOTO_KOS . 'kos-aron-tentang-ilustrasi.webp',
+        PATH_FOTO_KOS . 'kos-aron-alternatif-ilustrasi.webp',
+        PATH_FOTO_KAMAR . 'kamar-ilustrasi-01.webp',
+        PATH_FOTO_KAMAR . 'kamar-ilustrasi-02.webp',
+        PATH_FOTO_KAMAR . 'kamar-ilustrasi-03.webp',
+    ], true);
 }
 
 /**

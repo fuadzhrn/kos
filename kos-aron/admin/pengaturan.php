@@ -63,7 +63,7 @@ if ($aksi === 'simpan_kos') {
         } catch (DomainException $e) {
             $galatKos[] = $e->getMessage();
         } catch (Throwable $e) {
-            error_log('[pengaturan] ' . $e->getMessage());
+            error_log('[pengaturan] ' . get_class($e) . ' kode ' . $e->getCode());
             $galatKos[] = 'Pengaturan gagal disimpan. Silakan coba kembali.';
         }
     }
@@ -73,25 +73,25 @@ if ($aksi === 'simpan_kos') {
 // Nilai yang diketik TIDAK PERNAH disimpan ke variabel lain, TIDAK ditulis ke
 // log, dan TIDAK dikembalikan ke form (field password selalu dikosongkan lagi).
 $galatPassword   = [];
-$dikirimPassword = false;
-
+$passwordDisimpan = $_SESSION['admin_password_disimpan'] ?? false;
+unset($_SESSION['admin_password_disimpan']);
 if ($aksi === 'ubah_password') {
-    $dikirimPassword = true;
-    $passwordLama       = (string) ($_POST['password_lama'] ?? '');
-    $passwordBaru        = (string) ($_POST['password_baru'] ?? '');
-    $konfirmasiPassword  = (string) ($_POST['konfirmasi_password'] ?? '');
-
-    if ($passwordLama === '') {
-        $galatPassword[] = 'Password lama wajib diisi.';
+    try {
+        foreach (['password_lama', 'password_baru', 'konfirmasi_password'] as $kunci) {
+            if (!is_string($_POST[$kunci] ?? null)) {
+                throw new DomainException('Lengkapi isian password.');
+            }
+        }
+        ubah_password_sendiri($_POST['password_lama'], $_POST['password_baru'], $_POST['konfirmasi_password']);
+        $_SESSION['admin_password_disimpan'] = true;
+        header('Location: pengaturan.php', true, 303);
+        exit;
+    } catch (DomainException $e) {
+        $galatPassword[] = $e->getMessage();
+    } catch (PDOException $e) {
+        error_log('[pengaturan] Gagal memperbarui password.');
+        $galatPassword[] = 'Perubahan gagal disimpan. Silakan coba kembali.';
     }
-    if (mb_strlen($passwordBaru) < 8) {
-        $galatPassword[] = 'Password baru minimal 8 karakter.';
-    }
-    if ($passwordBaru !== $konfirmasiPassword) {
-        $galatPassword[] = 'Konfirmasi password baru tidak sama dengan password baru.';
-    }
-
-    unset($passwordLama, $passwordBaru, $konfirmasiPassword);
 }
 
 require __DIR__ . '/includes/header.php';
@@ -203,7 +203,7 @@ require __DIR__ . '/includes/header.php';
 </section>
 
 <!-- Ubah Password Admin -->
-<?php if ($dikirimPassword && $galatPassword): ?>
+<?php if ($galatPassword): ?>
     <div class="notice notice--galat mt-section" role="alert">
         <strong>Password belum diubah. Periksa kembali isian berikut:</strong>
         <ul>
@@ -212,10 +212,8 @@ require __DIR__ . '/includes/header.php';
             <?php endforeach; ?>
         </ul>
     </div>
-<?php elseif ($dikirimPassword): ?>
-    <p class="notice notice--peringatan mt-section" role="status">
-        <strong>Isian valid, tetapi password belum diubah.</strong> Verifikasi password lama dan penyimpanan password baru akan aktif setelah integrasi backend.
-    </p>
+<?php elseif ($passwordDisimpan): ?>
+    <p class="notice notice--berhasil mt-section" role="status">Password berhasil diubah.</p>
 <?php elseif (!$csrfValid): ?>
     <p class="notice notice--galat mt-section" role="alert">Sesi formulir sudah tidak valid. Muat ulang halaman ini dan coba lagi.</p>
 <?php endif; ?>
@@ -227,7 +225,7 @@ require __DIR__ . '/includes/header.php';
     <div class="form-panel__body">
         <?= csrf_field() ?>
         <input type="hidden" name="aksi" value="ubah_password">
-        <p class="teks-catatan">Password tidak ditampilkan di mana pun dan belum diverifikasi atau disimpan pada tahap ini.</p>
+        <p class="teks-catatan">Masukkan password saat ini untuk menggantinya.</p>
 
         <div class="form-grid">
             <div class="form-group">

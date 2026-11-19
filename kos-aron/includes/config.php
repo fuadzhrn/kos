@@ -4,6 +4,22 @@
  * File ini di-include paling awal oleh setiap halaman.
  */
 
+if (PHP_SAPI !== 'cli') {
+    ini_set('display_errors', '0');
+    ini_set('log_errors', '1');
+    $tingkatBuffer = ob_get_level();
+    ob_start();
+    set_exception_handler(static function (Throwable $galat) use ($tingkatBuffer): void {
+        while (ob_get_level() > $tingkatBuffer) {
+            ob_end_clean();
+        }
+        error_log(sprintf('[Kos Aron] %s di %s baris %d', get_class($galat), basename($galat->getFile()), $galat->getLine()));
+        http_response_code(500);
+        header('Content-Type: text/plain; charset=UTF-8');
+        echo 'Halaman tidak dapat dimuat saat ini. Silakan coba lagi nanti.';
+    });
+}
+
 // Zona waktu Sumenep (WIB), dipakai untuk tanggal hari ini & status tagihan terlambat.
 date_default_timezone_set('Asia/Jakarta');
 

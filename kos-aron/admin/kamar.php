@@ -100,13 +100,15 @@ require __DIR__ . '/includes/header.php';
                         <?php
                         $nama      = 'Kamar ' . $kamar['nomor'];
                         // Kata kunci pencarian, contoh: "kamar 05 kamar 5" (cocok untuk "05", "5", "kamar 5")
+                        $fotoTabel = daftar_foto_kamar($kamar)[0] ?? FOTO_PLACEHOLDER;
                         $kataKunci = strtolower($nama . ' kamar ' . ltrim((string) $kamar['nomor'], '0'));
                         ?>
                         <tr data-baris data-status="<?= e($kamar['status']) ?>" data-cari="<?= e($kataKunci) ?>">
                             <td class="tabel__no"><?= $i + 1 ?></td>
                             <td>
-                                <img class="tabel__foto" src="../<?= e(url_foto($kamar['foto'])) ?>"
-                                     alt="Foto <?= e($nama) ?>" loading="lazy" data-fallback="../<?= e(FOTO_PLACEHOLDER) ?>">
+                                <img class="tabel__foto" src="../<?= e($fotoTabel) ?>"
+                                     alt="<?= foto_adalah_ilustrasi($fotoTabel) ? 'Ilustrasi' : 'Foto' ?> <?= e($nama) ?>" loading="lazy" data-fallback="../<?= e(FOTO_PLACEHOLDER) ?>">
+                                <?php if (foto_adalah_ilustrasi($fotoTabel)): ?><small class="teks-catatan">Foto ilustrasi</small><?php endif; ?>
                             </td>
                             <td class="tabel__utama"><?= e($nama) ?></td>
                             <td class="tabel__angka"><?= e(format_rupiah($kamar['harga'])) ?></td>

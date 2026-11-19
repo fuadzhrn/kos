@@ -32,7 +32,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
         if ($ubahPassword) {
-            ubah_password_penghuni($_POST['password_lama'], $_POST['password_baru'], $_POST['konfirmasi_password']);
+            ubah_password_sendiri($_POST['password_lama'], $_POST['password_baru'], $_POST['konfirmasi_password']);
             $_SESSION['pesan_profil'] = 'Password berhasil diubah.';
         } else {
             foreach ($kolom as $key) {

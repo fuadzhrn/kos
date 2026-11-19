@@ -165,3 +165,9 @@ Pengujian integrasi menggunakan PHP 8.3, MySQL 8.4, dua sesi penghuni dan satu s
 | Akses | Penghuni ditolak saat membuka laporan atau mengirim pengaturan. Akses HTTP ke generator CLI ditolak. Log server uji bersih dari warning dan fatal error PHP. |
 
 Putaran akhir lulus 19 kelompok pemeriksaan. Lint 48 file PHP dan pemeriksaan sintaks admin.js lulus. Perubahan skema lokal mempertahankan 7 notifikasi, termasuk 3 yang sudah dibaca. Eksekusi manual CLI pada 19 November 2026 pukul 22.53 WIB menghasilkan 0 notifikasi baru. Pengujian scheduler berkala menunggu pemasangan sesuai [panduan scheduler](09-notifikasi-dan-scheduler.md).
+
+## 20 November 2026 — Audit akhir dan integrasi ilustrasi
+
+Matriks Black Box mencatat 26 skenario berhasil. Chrome memeriksa 31 keadaan halaman pada lima ukuran layar, termasuk pemuatan WebP publik dan admin. Pengujian dilakukan dengan salinan aplikasi dan MySQL sementara. Database operasional tidak dimodifikasi untuk pemasangan ilustrasi. Beranda dan Tentang memakai ilustrasi lokal ketika foto bangunan belum tersedia. Kamar contoh 01, 02 dan 04 memakai gambar konsisten pada kartu, detail dan Data Kamar, dengan prioritas bagi foto utama dan galeri asli.
+
+Lihat [laporan audit, perbaikan dan pekerjaan terbuka](10-audit-akhir.md), [matriks Black Box](10-black-box.md), [hasil tampilan](10-responsive.md) dan [indeks panduan](README.md). Status penerapan masih mencakup pemisahan tiga akun contoh di database development, pengujian scheduler dan host tujuan, serta pengumpulan SUS dari 15 responden.

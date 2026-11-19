@@ -8,12 +8,12 @@
  * Jalankan: php database/uji-koneksi.php
  */
 
-require_once __DIR__ . '/../includes/koneksi.php';
-
 if (PHP_SAPI !== 'cli') {
     http_response_code(404);
     exit;
 }
+
+require_once __DIR__ . '/../includes/koneksi.php';
 
 try {
     $pdo = koneksi_database();

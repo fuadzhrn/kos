@@ -8,6 +8,7 @@
  *
  * @var array $kamar Diisi oleh halaman yang meng-include file ini.
  */
+$fotoKartu = daftar_foto_kamar($kamar)[0] ?? FOTO_PLACEHOLDER;
 $urlDetail       = 'detail-kamar.php?id=' . (int) $kamar['id'];
 $fasilitasUtama  = array_slice($kamar['fasilitas'], 0, 3);
 
@@ -17,9 +18,10 @@ $kataKunci       = strtolower('kamar ' . $kamar['nomor'] . ' kamar ' . $nomorTan
 ?>
 <article class="card-kamar" data-status="<?= e($kamar['status']) ?>" data-cari="<?= e($kataKunci) ?>">
     <a href="<?= e($urlDetail) ?>" class="card-kamar__foto" tabindex="-1" aria-hidden="true">
-        <img src="<?= e(url_foto($kamar['foto'])) ?>"
-             alt="Foto Kamar <?= e($kamar['nomor']) ?>"
+        <img src="<?= e($fotoKartu) ?>"
+             alt="<?= foto_adalah_ilustrasi($fotoKartu) ? 'Ilustrasi kamar' : 'Foto kamar' ?> <?= e($kamar['nomor']) ?>"
              loading="lazy" data-fallback>
+        <?php if (foto_adalah_ilustrasi($fotoKartu)): ?><small class="keterangan-ilustrasi">Foto ilustrasi</small><?php endif; ?>
     </a>
 
     <div class="card-kamar__body">

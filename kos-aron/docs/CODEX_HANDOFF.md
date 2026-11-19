@@ -92,3 +92,9 @@ Pengingat H-7, H-3, terlambat dan lunas disimpan di MySQL. Dashboard dan halaman
 Laporan admin memakai periode tagihan dan pembayaran penuh yang masih sah. Ketika bulan dipilih tanpa tahun, halaman menggunakan tahun berjalan. Hunian kamar mengacu ke akhir periode terpilih atau hari ini jika periode masih berjalan. Untuk seluruh periode, ringkasan hunian memakai hari ini. Perawatan hanya diketahui dari kondisi kamar saat ini. Laporan historis menyebut kamar kosong berdasarkan riwayat sewa.
 
 Admin dapat menyimpan identitas, deskripsi, alamat, WhatsApp, tautan atau sematan Maps, dan foto di Pengaturan. Halaman publik membaca pengaturan pada setiap permintaan. Form password admin yang terpisah masih merupakan prototipe dari tahap sebelumnya. Pengujian akhir menyeluruh dan instrumen SUS masuk Tahap 10.
+
+## 20 November 2026 — Audit akhir dan integrasi ilustrasi
+
+Matriks Black Box mencatat 26 skenario berhasil. Chrome memeriksa 31 keadaan halaman pada lima ukuran layar, termasuk pemuatan WebP publik dan admin. Pengujian dilakukan dengan salinan aplikasi dan MySQL sementara. Database operasional tidak dimodifikasi untuk pemasangan ilustrasi. Beranda dan Tentang memakai ilustrasi lokal ketika foto bangunan belum tersedia. Kamar contoh 01, 02 dan 04 memakai gambar konsisten pada kartu, detail dan Data Kamar, dengan prioritas bagi foto utama dan galeri asli.
+
+Lihat [laporan audit, perbaikan dan pekerjaan terbuka](10-audit-akhir.md), [matriks Black Box](10-black-box.md), [hasil tampilan](10-responsive.md) dan [indeks panduan](README.md). Status penerapan masih mencakup pemisahan tiga akun contoh di database development, pengujian scheduler dan host tujuan, serta pengumpulan SUS dari 15 responden.

@@ -55,8 +55,9 @@ require __DIR__ . '/includes/header.php';
             <div class="detail-kamar">
                 <div class="detail-kamar__media" data-galeri>
                     <div class="foto-frame">
-                        <img src="<?= e($fotoUtama) ?>" alt="Foto <?= e($namaKamar) ?>"
-                             data-galeri-utama data-fallback>
+                        <img src="<?= e($fotoUtama) ?>" alt="<?= foto_adalah_ilustrasi($fotoUtama) ? 'Ilustrasi' : 'Foto' ?> <?= e($namaKamar) ?>"
+                             loading="lazy" data-galeri-utama data-fallback>
+                        <?php if (foto_adalah_ilustrasi($fotoUtama)): ?><small class="keterangan-ilustrasi">Foto ilustrasi</small><?php endif; ?>
                     </div>
 
                     <?php if (count($daftarFoto) > 1): ?>

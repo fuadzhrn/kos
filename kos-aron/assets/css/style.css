@@ -704,6 +704,19 @@ select.form-control {
 }
 
 /* 11. Komponen bantu --------------------------------------- */
+.foto-frame, .card-kamar__foto { position: relative; }
+.keterangan-ilustrasi {
+    position: absolute;
+    left: .5rem;
+    bottom: .5rem;
+    padding: .12rem .45rem;
+    border-radius: .25rem;
+    background: var(--white, #fff);
+    color: var(--text, #273442);
+    font-size: .75rem;
+    line-height: 1.4;
+}
+
 /* Bingkai foto 4:3 (hero, tentang, detail kamar) */
 .foto-frame {
     aspect-ratio: 4 / 3;

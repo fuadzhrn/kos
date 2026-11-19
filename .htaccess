@@ -1,0 +1,4 @@
+# Jika repositori diakses lewat alias Laragon, tutup metadata Git dan alat pengembangan.
+Options -Indexes
+RewriteEngine On
+RewriteRule "(^|/)(\.|scripts(?:/|$))" - [F,NC]

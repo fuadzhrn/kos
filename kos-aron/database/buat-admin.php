@@ -83,8 +83,8 @@ while (true) {
     $password  = baca_password('Password baru (minimal 8 karakter): ');
     $konfirmasi = baca_password('Ulangi password: ');
 
-    if (mb_strlen($password) < 8) {
-        echo "  Password terlalu pendek. Minimal 8 karakter.\n";
+    if (mb_strlen($password) < 8 || strlen($password) > 72 || str_contains($password, "\0")) {
+        echo "  Gunakan minimal 8 karakter dan maksimal 72 byte, tanpa karakter NUL.\n";
         continue;
     }
     if ($password !== $konfirmasi) {

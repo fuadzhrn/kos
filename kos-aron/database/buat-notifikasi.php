@@ -9,6 +9,6 @@ try {
     $baru = buat_notifikasi_tagihan(koneksi_database(), date('Y-m-d'));
     echo date('Y-m-d H:i:s') . " WIB | Notifikasi baru: $baru\n";
 } catch (Throwable $e) {
-    error_log('Pembuatan notifikasi gagal: ' . $e->getMessage());
+    error_log('Pembuatan notifikasi gagal, ' . get_class($e) . ' kode ' . $e->getCode());
     exit(1);
 }

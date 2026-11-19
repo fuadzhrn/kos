@@ -1,0 +1,8 @@
+Options -Indexes
+RewriteEngine On
+# Folder ini hanya dibaca PHP melalui filesystem.
+RewriteRule "^(?:(?:data|database|docs|includes)(?:/|$)|(?:admin|penghuni)/includes(?:/|$))" - [F,NC]
+RewriteRule "(^|/)\." - [F]
+<FilesMatch "(?i)(?:\.(?:sql(?:\.(?:gz|zip))?|dump|log(?:\.\d+)?|ini|bak|backup|old|orig|sqlite3?|key|pem|p12)|\.local\.php|~)$">
+    Require all denied
+</FilesMatch>

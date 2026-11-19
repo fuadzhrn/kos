@@ -78,3 +78,19 @@ node_modules/
 Thumbs.db
 desktop.ini
 .DS_Store
+
+# Foto unggahan dan jawaban penelitian berisi data operasional.
+kos-aron/assets/images/kamar/*
+kos-aron/assets/images/kos/*
+!kos-aron/assets/images/kamar/.htaccess
+!kos-aron/assets/images/kamar/.gitkeep
+!kos-aron/assets/images/kos/.htaccess
+!kos-aron/assets/images/kos/.gitkeep
+
+# Paket ilustrasi publik bawaan.
+!kos-aron/assets/images/kos/kos-aron-hero-ilustrasi.webp
+!kos-aron/assets/images/kos/kos-aron-tentang-ilustrasi.webp
+!kos-aron/assets/images/kos/kos-aron-alternatif-ilustrasi.webp
+!kos-aron/assets/images/kamar/kamar-ilustrasi-01.webp
+!kos-aron/assets/images/kamar/kamar-ilustrasi-02.webp
+!kos-aron/assets/images/kamar/kamar-ilustrasi-03.webp

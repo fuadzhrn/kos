@@ -235,31 +235,3 @@ function ubah_profil_sendiri(string $nama, string $telepon, string $akun): void
     $_SESSION['user']['nama'] = $nama;
     $_SESSION['user']['username'] = $akun;
 }
-
-function ubah_password_penghuni(string $lama, string $baru, string $konfirmasi): void
-{
-    if (mb_strlen($baru) < 8 || strlen($baru) > 72 || str_contains($baru, "\0") || $baru !== $konfirmasi) {
-        throw new DomainException('Gunakan password baru minimal 8 karakter, maksimal 72 byte, dan konfirmasi yang sama.');
-    }
-    $db = koneksi_database();
-    $userId = pengguna_login()['id'];
-    $stmt = $db->prepare("SELECT password_hash FROM users WHERE id = ? AND role = 'penghuni' AND status = 'aktif'");
-    $stmt->execute([$userId]);
-    $hash = $stmt->fetchColumn();
-    if (!$hash || str_contains($lama, "\0") || !password_verify($lama, $hash)) {
-        throw new DomainException('Password lama tidak sesuai.');
-    }
-    if (password_verify($baru, $hash)) {
-        throw new DomainException('Pilih password baru yang berbeda dari password saat ini.');
-    }
-    $hashBaru = password_hash($baru, PASSWORD_DEFAULT);
-    $stmt = $db->prepare("UPDATE users SET password_hash = ? WHERE id = ? AND BINARY password_hash = ?
-        AND role = 'penghuni' AND status = 'aktif'");
-    $stmt->execute([$hashBaru, $userId, $hash]);
-    if ($stmt->rowCount() !== 1) {
-        throw new DomainException('Data akun berubah. Muat ulang sebelum mengganti password.');
-    }
-    session_regenerate_id(true);
-    $_SESSION['sidik_password'] = hash('sha256', $hashBaru);
-    unset($_SESSION['csrf_token']);
-}

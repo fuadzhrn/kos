@@ -201,6 +201,20 @@ def run_tests(tmp, app):
                       "Alamat, WhatsApp dan Google Maps publik")
                 check(photo in home and photo in about and urllib.request.urlopen(base+"assets/images/kos/"+photo).read() == png,
                       "Unggahan foto dapat dibuka dari website publik")
+                for page in [home, about]:
+                    frame = re.search(r'<div class="foto-frame">(.*?)</div>', page, flags=re.S)[1]
+                    assert photo in frame and 'Foto ilustrasi' not in frame
+                # Uji prioritas berkas unggahan pada salinan aplikasi tanpa menulis record kamar.
+                (app / "assets/images/kamar/foto-uji.png").write_bytes(png)
+                sources = json.loads(php("""require 'includes/config.php';
+                    $k = ['id'=>1,'nomor'=>'01','foto'=>'foto-uji.png','galeri'=>[]];
+                    $utama = daftar_foto_kamar($k);
+                    $k['foto'] = null;
+                    $k['galeri'] = ['foto-uji.png'];
+                    $galeri = daftar_foto_kamar($k);
+                    echo json_encode([$utama,$galeri,foto_adalah_ilustrasi($utama[0])]);""", app))
+                assert sources == [['assets/images/kamar/foto-uji.png'], ['assets/images/kamar/foto-uji.png'], False]
+                check(True, "Foto utama dan galeri asli diprioritaskan; label ilustrasi hanya untuk aset ilustrasi")
                 admin.request(settings, {**form, "nama_kos":"Kos Integrasi Baru"})
                 check(photo in public.request("index.php"), "Menyimpan teks mempertahankan foto")
                 other_admin = Browser(base)

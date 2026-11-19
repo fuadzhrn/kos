@@ -86,11 +86,8 @@ menyembunyikan tombol/menu).
   (tidak cocok dengan password apa pun) — hanya ada untuk memenuhi relasi
   FK (`dibuat_oleh`/`dicatat_oleh`) pada data uji. Baris ini **harus**
   diganti lewat `buat-admin.php` sebelum admin bisa login sungguhan.
-- Akun penghuni (`ahmad.fauzi`, `lina.marlina`, `dedi.kurniawan`, password
-  uji `UjiCoba#2026` — lihat komentar di `database/seed.sql`) tetap aktif
-  sebagai akun uji, sesuai instruksi "akun penghuni dibuat admin" yang
-  memang sudah dicontohkan sejak tahap data uji sebelumnya; akun-akun ini
-  dipakai untuk pengujian TUGAS 7 di bawah.
+- Hasil di bawah adalah catatan pengujian tahap login. Pada rilis audit akhir,
+  akun contoh dalam seed nonaktif. Skrip uji membuat password acak di database sementara.
 
 ## 7.6 TUGAS 7 — Hasil Pengujian
 

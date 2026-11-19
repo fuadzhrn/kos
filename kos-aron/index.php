@@ -12,6 +12,7 @@ $kamarTersedia = get_kamar_tersedia(3);
 $kontak           = link_hubungi_pemilik('Halo, saya ingin bertanya tentang kamar di ' . SITE_NAME . '.');
 $atributEksternal = $kontak['eksternal'] ? ' target="_blank" rel="noopener"' : '';
 
+$fotoBangunan = foto_bangunan_publik('kos-aron-hero-ilustrasi.webp');
 require __DIR__ . '/includes/header.php';
 ?>
 
@@ -26,8 +27,11 @@ require __DIR__ . '/includes/header.php';
         </div>
 
         <div class="foto-frame">
-            <img src="<?= e(url_foto(FOTO_BANGUNAN_KOS, PATH_FOTO_KOS)) ?>"
-                 alt="Foto bangunan <?= e(SITE_NAME) ?>" data-fallback>
+            <img src="<?= e($fotoBangunan) ?>"
+                 alt="<?= foto_adalah_ilustrasi($fotoBangunan) ? 'Ilustrasi bangunan' : 'Foto bangunan' ?> <?= e(SITE_NAME) ?>" data-fallback>
+            <?php if (foto_adalah_ilustrasi($fotoBangunan)): ?>
+                <small class="keterangan-ilustrasi">Foto ilustrasi</small>
+            <?php endif; ?>
         </div>
     </div>
 </section>
