@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../includes/config.php';
+require_role('admin', '../login.php');
 require_once __DIR__ . '/../data/penghuni.php'; // juga memuat data kamar
 
 $menuAktif = 'penghuni';
@@ -30,8 +31,10 @@ $nilai = [
  * Nanti (backend): validasi CSRF, INSERT/UPDATE tabel penghuni, buat akun login
  * dengan password_hash(), ubah status kamar, semuanya dalam satu transaksi.
  */
-$dikirim = ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST';
-$galat   = [];
+$metode    = $_SERVER['REQUEST_METHOD'] ?? 'GET';
+$csrfValid = $metode !== 'POST' || csrf_valid($_POST['csrf_token'] ?? null);
+$dikirim   = $metode === 'POST' && $csrfValid;
+$galat     = [];
 
 if ($dikirim) {
     foreach (array_keys($nilai) as $kunci) {
@@ -102,11 +105,14 @@ require __DIR__ . '/includes/header.php';
         <p class="notice notice--peringatan" role="status">
             <strong>Isian valid, tetapi data belum disimpan.</strong> Penyimpanan data penghuni akan aktif setelah integrasi backend.
         </p>
+    <?php elseif ($metode === 'POST' && !$csrfValid): ?>
+        <p class="notice notice--galat" role="alert">Sesi formulir sudah tidak valid. Muat ulang halaman ini dan coba lagi.</p>
     <?php else: ?>
         <p class="notice">Form ini masih prototype tampilan. Penyimpanan data akan aktif setelah integrasi backend.</p>
     <?php endif; ?>
 
     <form method="post" action="<?= e($aksiForm) ?>" class="panel form-panel" data-form-penghuni>
+        <?= csrf_field() ?>
         <div class="form-grid form-grid--2">
             <div class="form-group">
                 <label for="nama">Nama Lengkap</label>

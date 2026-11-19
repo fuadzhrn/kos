@@ -19,7 +19,10 @@ require_once __DIR__ . '/../../data/penghuni.php';
 $judulHalaman  = $judulHalaman ?? 'Dashboard';
 $menuAktif     = $menuAktif ?? '';
 $penghuniLogin = get_penghuni_login();
-$namaPenghuni  = $penghuniLogin['nama'] ?? 'Penghuni';
+// Nama di topbar mengikuti akun yang BENAR-BENAR login (sesi). Konten
+// dashboard di bawahnya masih memakai $penghuniLogin (data contoh) --
+// lihat docs/07-login-dan-keamanan.md untuk batas integrasi tahap ini.
+$namaPenghuni  = pengguna_login()['nama'] ?? ($penghuniLogin['nama'] ?? 'Penghuni');
 
 $menuPenghuni = [
     'dashboard'  => ['Dashboard',          'index.php'],
@@ -78,7 +81,12 @@ $menuPenghuni = [
                 </summary>
                 <ul class="topbar__menu">
                     <li><a href="profil.php">Profil</a></li>
-                    <li><a href="../login.php">Keluar</a></li>
+                    <li>
+                        <form method="post" action="../logout.php" class="form-logout">
+                            <?= csrf_field() ?>
+                            <button type="submit">Keluar</button>
+                        </form>
+                    </li>
                 </ul>
             </details>
         </header>

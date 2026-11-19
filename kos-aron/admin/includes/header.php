@@ -10,7 +10,7 @@
  */
 $judulHalaman = $judulHalaman ?? 'Dashboard';
 $menuAktif    = $menuAktif ?? '';
-$namaAdmin    = 'Admin Kos Aron'; // dummy
+$namaAdmin    = pengguna_login()['nama'] ?? 'Admin Kos Aron';
 
 $menuAdmin = [
     'dashboard'  => ['Dashboard',     'index.php'],
@@ -70,7 +70,12 @@ $menuAdmin = [
                 </summary>
                 <ul class="topbar__menu">
                     <li><a href="pengaturan.php">Profil</a></li>
-                    <li><a href="../login.php">Keluar</a></li>
+                    <li>
+                        <form method="post" action="../logout.php" class="form-logout">
+                            <?= csrf_field() ?>
+                            <button type="submit">Keluar</button>
+                        </form>
+                    </li>
                 </ul>
             </details>
         </header>

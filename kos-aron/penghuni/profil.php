@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../includes/config.php';
+require_role('penghuni', '../login.php');
 require_once __DIR__ . '/../data/tagihan.php'; // juga memuat data penghuni, kamar & pembayaran
 
 $judulHalaman = 'Profil';
@@ -21,8 +22,9 @@ $kamarSaya = $penghuniLogin ? get_kamar_by_id($penghuniLogin['kamar_id']) : null
  * nomor kamar, harga sewa, status pembayaran, dan role akun semuanya
  * hanya bisa diubah dari sisi Admin, bukan oleh penghuni sendiri.
  */
-$metode = $_SERVER['REQUEST_METHOD'] ?? 'GET';
-$aksi   = $metode === 'POST' ? ($_POST['aksi'] ?? '') : '';
+$metode    = $_SERVER['REQUEST_METHOD'] ?? 'GET';
+$csrfValid = $metode !== 'POST' || csrf_valid($_POST['csrf_token'] ?? null);
+$aksi      = ($metode === 'POST' && $csrfValid) ? ($_POST['aksi'] ?? '') : '';
 
 // --- Form Edit Profil: default-nya tampilkan data saat ini. ---
 $nilaiProfil = $penghuniLogin
@@ -131,6 +133,8 @@ if ($aksi === 'ubah_password' && $penghuniLogin !== null) {
         <p class="notice notice--peringatan mt-section" role="status">
             <strong>Isian valid, tetapi profil belum disimpan.</strong> Penyimpanan perubahan profil akan aktif setelah integrasi backend.
         </p>
+    <?php elseif (!$csrfValid): ?>
+        <p class="notice notice--galat mt-section" role="alert">Sesi formulir sudah tidak valid. Muat ulang halaman ini dan coba lagi.</p>
     <?php endif; ?>
 
     <form method="post" action="profil.php" class="panel form-panel form-panel--berkepala mt-section">
@@ -138,6 +142,7 @@ if ($aksi === 'ubah_password' && $penghuniLogin !== null) {
             <h2>Edit Profil</h2>
         </div>
         <div class="form-panel__body">
+            <?= csrf_field() ?>
             <input type="hidden" name="aksi" value="simpan_profil">
 
             <div class="form-grid form-grid--2">
@@ -182,6 +187,8 @@ if ($aksi === 'ubah_password' && $penghuniLogin !== null) {
         <p class="notice notice--peringatan mt-section" role="status">
             <strong>Isian valid, tetapi password belum diubah.</strong> Verifikasi password lama dan penyimpanan password baru akan aktif setelah integrasi backend.
         </p>
+    <?php elseif (!$csrfValid): ?>
+        <p class="notice notice--galat mt-section" role="alert">Sesi formulir sudah tidak valid. Muat ulang halaman ini dan coba lagi.</p>
     <?php endif; ?>
 
     <form method="post" action="profil.php" class="panel form-panel form-panel--berkepala mt-section" data-form-password autocomplete="off">
@@ -189,6 +196,7 @@ if ($aksi === 'ubah_password' && $penghuniLogin !== null) {
             <h2>Ubah Password</h2>
         </div>
         <div class="form-panel__body">
+            <?= csrf_field() ?>
             <input type="hidden" name="aksi" value="ubah_password">
             <p class="teks-catatan">Password tidak ditampilkan di mana pun dan belum diverifikasi atau disimpan pada tahap ini.</p>
 

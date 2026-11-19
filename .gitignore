@@ -29,6 +29,9 @@ credentials*.json
 *.sqlite
 *.sqlite3
 !**/schema.sql
+# database/seed.sql: data uji FIKTIF (lihat isi file), bukan dump
+# data penghuni sungguhan -- aman dan memang dimaksudkan untuk di-commit.
+!**/seed.sql
 
 # --- File unggahan pengguna (tahap backend) ---------------
 # Mis. bukti pembayaran penghuni: jangan masuk repository.

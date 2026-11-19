@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../includes/config.php';
+require_role('admin', '../login.php');
 require_once __DIR__ . '/../data/tagihan.php'; // juga memuat data penghuni & kamar
 
 $judulHalaman = 'Data Tagihan';
@@ -19,7 +20,8 @@ $penghuniAktif = array_values(array_filter(get_semua_penghuni(), fn ($p) => $p['
  * UNIQUE (penghuni_id, periode) di database untuk mencegah tagihan ganda.
  */
 $metode     = $_SERVER['REQUEST_METHOD'] ?? 'GET';
-$aksi       = $metode === 'POST' ? ($_POST['aksi'] ?? '') : '';
+$csrfValid  = $metode !== 'POST' || csrf_valid($_POST['csrf_token'] ?? null);
+$aksi       = ($metode === 'POST' && $csrfValid) ? ($_POST['aksi'] ?? '') : '';
 $pesanAksi  = null;
 $modal      = null; // null = modal tertutup saat halaman dimuat
 
@@ -188,6 +190,7 @@ require __DIR__ . '/includes/header.php';
                                            data-edit-tagihan="<?= e($dataEdit) ?>" aria-label="Edit tagihan <?= e($label) ?>">Edit</a>
                                         <form method="post" action="tagihan.php"
                                               data-konfirmasi="Hapus tagihan <?= e($label) ?>? (Fitur hapus belum aktif, data tidak akan berubah.)">
+                                            <?= csrf_field() ?>
                                             <input type="hidden" name="aksi" value="hapus">
                                             <input type="hidden" name="id" value="<?= (int) $t['id'] ?>">
                                             <button type="submit" class="btn btn-hapus btn-sm" aria-label="Hapus tagihan <?= e($label) ?>">Hapus</button>
@@ -237,6 +240,7 @@ require __DIR__ . '/includes/header.php';
             <?php endif; ?>
             <p class="teks-catatan modal__info">Form prototype: tidak ada tagihan yang benar-benar dibuat atau dikirim ke penghuni.</p>
 
+            <?= csrf_field() ?>
             <input type="hidden" name="aksi" value="simpan">
             <input type="hidden" name="id" value="<?= e($nilaiForm['id']) ?>">
 

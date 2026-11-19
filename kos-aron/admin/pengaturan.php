@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../includes/config.php';
+require_role('admin', '../login.php');
 
 $judulHalaman = 'Pengaturan';
 $menuAktif    = 'pengaturan';
@@ -13,8 +14,9 @@ $namaAdminAkun = 'Admin Kos Aron'; // dummy -- sama dengan yang tampil di topbar
  * Nanti (backend): kolom pengaturan di tabel `pengaturan` (satu baris) untuk
  * info kos, dan verifikasi password lama + password_hash() untuk password admin.
  */
-$metode = $_SERVER['REQUEST_METHOD'] ?? 'GET';
-$aksi   = $metode === 'POST' ? ($_POST['aksi'] ?? '') : '';
+$metode    = $_SERVER['REQUEST_METHOD'] ?? 'GET';
+$csrfValid = $metode !== 'POST' || csrf_valid($_POST['csrf_token'] ?? null);
+$aksi      = ($metode === 'POST' && $csrfValid) ? ($_POST['aksi'] ?? '') : '';
 
 // --- Form Informasi Kos: default-nya tampilkan konfigurasi saat ini. ---
 $nilaiKos = [
@@ -98,6 +100,8 @@ require __DIR__ . '/includes/header.php';
     <p class="notice notice--peringatan" role="status">
         <strong>Isian valid, tetapi pengaturan belum disimpan.</strong> Penyimpanan pengaturan kos akan aktif setelah integrasi backend.
     </p>
+<?php elseif (!$csrfValid): ?>
+    <p class="notice notice--galat" role="alert">Sesi formulir sudah tidak valid. Muat ulang halaman ini dan coba lagi.</p>
 <?php else: ?>
     <p class="notice">Form di bawah menampilkan konfigurasi website saat ini (includes/config.php). Penyimpanan perubahan akan aktif setelah integrasi backend.</p>
 <?php endif; ?>
@@ -107,6 +111,7 @@ require __DIR__ . '/includes/header.php';
         <h2>Informasi Kos</h2>
     </div>
     <div class="form-panel__body">
+        <?= csrf_field() ?>
         <input type="hidden" name="aksi" value="simpan_kos">
 
         <div class="form-grid form-grid--2">
@@ -199,6 +204,8 @@ require __DIR__ . '/includes/header.php';
     <p class="notice notice--peringatan mt-section" role="status">
         <strong>Isian valid, tetapi password belum diubah.</strong> Verifikasi password lama dan penyimpanan password baru akan aktif setelah integrasi backend.
     </p>
+<?php elseif (!$csrfValid): ?>
+    <p class="notice notice--galat mt-section" role="alert">Sesi formulir sudah tidak valid. Muat ulang halaman ini dan coba lagi.</p>
 <?php endif; ?>
 
 <form method="post" action="pengaturan.php" class="panel form-panel form-panel--berkepala mt-section" data-form-password autocomplete="off">
@@ -206,6 +213,7 @@ require __DIR__ . '/includes/header.php';
         <h2>Ubah Password</h2>
     </div>
     <div class="form-panel__body">
+        <?= csrf_field() ?>
         <input type="hidden" name="aksi" value="ubah_password">
         <p class="teks-catatan">Password tidak ditampilkan di mana pun dan belum diverifikasi atau disimpan pada tahap ini.</p>
 

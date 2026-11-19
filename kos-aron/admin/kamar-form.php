@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../includes/config.php';
+require_role('admin', '../login.php');
 require_once __DIR__ . '/../data/kamar.php';
 
 $menuAktif = 'kamar';
@@ -20,7 +21,9 @@ if ($modeEdit) {
  * Isian dikembalikan ke form agar tidak hilang, disertai pesan yang jelas.
  * Nanti: validasi CSRF & input, upload foto, lalu INSERT / UPDATE ke tabel kamar.
  */
-$dikirim = ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST';
+$metode    = $_SERVER['REQUEST_METHOD'] ?? 'GET';
+$csrfValid = $metode !== 'POST' || csrf_valid($_POST['csrf_token'] ?? null);
+$dikirim   = $metode === 'POST' && $csrfValid;
 
 $nilai = [
     'nomor'     => $kamar['nomor'] ?? '',
@@ -66,11 +69,14 @@ require __DIR__ . '/includes/header.php';
             <strong>Data belum disimpan.</strong> Penyimpanan data kamar akan aktif setelah integrasi backend.
             Isian Anda tetap ditampilkan di bawah<?= !empty($_FILES['foto']['name']) ? ', tetapi file foto perlu dipilih ulang' : '' ?>.
         </p>
+    <?php elseif ($metode === 'POST' && !$csrfValid): ?>
+        <p class="notice notice--galat" role="alert">Sesi formulir sudah tidak valid. Muat ulang halaman ini dan coba lagi.</p>
     <?php else: ?>
         <p class="notice">Form ini masih tampilan. Penyimpanan data akan aktif setelah integrasi backend.</p>
     <?php endif; ?>
 
     <form method="post" action="<?= e($aksiForm) ?>" enctype="multipart/form-data" class="panel form-panel">
+        <?= csrf_field() ?>
         <div class="form-grid">
             <div class="form-group">
                 <label for="nomor">Nomor Kamar</label>

@@ -5,12 +5,53 @@ $judulHalaman  = 'Login';
 $halamanAktif  = 'login';
 $deskripsiMeta = 'Halaman login khusus Admin dan Penghuni Kos Aron.';
 
-/*
- * Tampilan saja: belum ada proses autentikasi.
- * Data yang dikirim TIDAK dibaca, disimpan, maupun dicocokkan.
- * Proses login (PHP session + tabel pengguna MySQL) dibuat pada tahap sistem internal.
- */
+// Sudah login? Tidak perlu melihat form login lagi.
+$sudahLogin = pengguna_login();
+if ($sudahLogin !== null) {
+    header('Location: ' . ($sudahLogin['role'] === 'admin' ? 'admin/index.php' : 'penghuni/index.php'));
+    exit;
+}
+
 $formDikirim = ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST';
+$pesanGalat  = null;
+$identitasIsi = '';
+
+if ($formDikirim) {
+    $identitasIsi = trim((string) ($_POST['identitas'] ?? ''));
+    $password     = (string) ($_POST['password'] ?? '');
+
+    if (!csrf_valid($_POST['csrf_token'] ?? null)) {
+        $pesanGalat = 'Sesi formulir sudah tidak valid. Muat ulang halaman ini dan coba lagi.';
+    } elseif ($identitasIsi === '' || mb_strlen($identitasIsi) > 190) {
+        $pesanGalat = 'Username/email dan password wajib diisi.';
+    } elseif ($password === '') {
+        $pesanGalat = 'Username/email dan password wajib diisi.';
+    } elseif (login_terkunci($identitasIsi)) {
+        $pesanGalat = 'Terlalu banyak percobaan gagal. Coba lagi dalam ' . DURASI_KUNCI_LOGIN . ' detik.';
+    } else {
+        try {
+            $akun = cari_dan_verifikasi_login($identitasIsi, $password);
+        } catch (Throwable $e) {
+            $akun       = null;
+            $pesanGalat = 'Tidak dapat memproses login saat ini. Silakan coba lagi.';
+        }
+
+        if ($pesanGalat === null) {
+            if ($akun !== null) {
+                reset_percobaan_login($identitasIsi);
+                login_berhasil($akun);
+                header('Location: ' . ($akun['role'] === 'admin' ? 'admin/index.php' : 'penghuni/index.php'));
+                exit;
+            }
+
+            catat_percobaan_login_gagal($identitasIsi);
+            // Pesan generik yang SAMA untuk akun tidak ada, password salah,
+            // maupun akun nonaktif -- supaya keberadaan/status akun tidak
+            // bisa ditebak dari respons.
+            $pesanGalat = 'Username/email atau password salah.';
+        }
+    }
+}
 
 require __DIR__ . '/includes/header.php';
 ?>
@@ -21,17 +62,21 @@ require __DIR__ . '/includes/header.php';
             <h1>Login</h1>
             <p class="auth-box__sub">Khusus Admin dan Penghuni Kos Aron.</p>
 
-            <?php if ($formDikirim): ?>
-                <p class="notice notice--muted" role="status">
-                    Fitur login belum aktif. Login untuk Admin dan Penghuni akan tersedia setelah sistem internal selesai dibuat.
-                </p>
+            <?php if (isset($_GET['keluar'])): ?>
+                <p class="notice notice--berhasil" role="status">Anda telah keluar.</p>
+            <?php endif; ?>
+
+            <?php if ($pesanGalat !== null): ?>
+                <p class="notice notice--galat" role="alert"><?= e($pesanGalat) ?></p>
             <?php endif; ?>
 
             <form method="post" action="login.php" class="auth-form">
+                <?= csrf_field() ?>
                 <div class="form-group">
-                    <label for="username">Username</label>
-                    <input type="text" id="username" name="username" class="form-control"
-                           autocomplete="username" required>
+                    <label for="identitas">Username atau Email</label>
+                    <input type="text" id="identitas" name="identitas" class="form-control"
+                           autocomplete="username" maxlength="190" required
+                           value="<?= e($identitasIsi) ?>">
                 </div>
 
                 <div class="form-group">
@@ -46,8 +91,6 @@ require __DIR__ . '/includes/header.php';
 
                 <button type="submit" class="btn btn-primary btn-block">Masuk</button>
             </form>
-
-            <p class="teks-catatan auth-box__catatan">Fitur login masih dalam tahap pengembangan.</p>
         </div>
 
         <p class="auth-info">

@@ -234,17 +234,34 @@ body.sidebar-open {
     border-radius: var(--radius-card);
 }
 
-.topbar__menu a {
+.topbar__menu a,
+.topbar__menu button {
     display: block;
+    width: 100%;
     padding: 9px 12px;
     font-size: 14px;
     color: var(--text);
     border-radius: 4px;
 }
 
-.topbar__menu a:hover {
+.topbar__menu a:hover,
+.topbar__menu button:hover {
     color: var(--heading);
     background: var(--soft-gray);
+}
+
+/* Form logout (Keluar): tombol polos agar tampil identik dengan tautan menu lain */
+.topbar__menu .form-logout {
+    margin: 0;
+}
+
+.topbar__menu button {
+    appearance: none;
+    background: none;
+    border: none;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
 }
 
 /* 5. Kepala halaman & kartu statistik ---------------------- */

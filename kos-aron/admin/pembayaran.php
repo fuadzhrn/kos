@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../includes/config.php';
+require_role('admin', '../login.php');
 require_once __DIR__ . '/../data/tagihan.php'; // juga memuat data penghuni, kamar & pembayaran
 
 $judulHalaman = 'Data Pembayaran';
@@ -27,7 +28,8 @@ $tagihanBelumLunas = get_tagihan_belum_lunas();
  *   5. Riwayat pembayaran diperbarui (muncul di tabel ini).
  */
 $metodeHttp = $_SERVER['REQUEST_METHOD'] ?? 'GET';
-$dikirim    = $metodeHttp === 'POST' && ($_POST['aksi'] ?? '') === 'simpan';
+$csrfValid  = $metodeHttp !== 'POST' || csrf_valid($_POST['csrf_token'] ?? null);
+$dikirim    = $metodeHttp === 'POST' && $csrfValid && ($_POST['aksi'] ?? '') === 'simpan';
 $modalBuka  = false;
 
 $nilaiKosong = ['tagihan_id' => '', 'tanggal_bayar' => '', 'nominal_dibayar' => '', 'metode' => 'tunai', 'keterangan' => ''];
@@ -220,6 +222,7 @@ require __DIR__ . '/includes/header.php';
             <?php endif; ?>
             <p class="teks-catatan modal__info">Form prototype: tidak ada pembayaran yang benar-benar dicatat, dan tidak ada status tagihan yang berubah.</p>
 
+            <?= csrf_field() ?>
             <input type="hidden" name="aksi" value="simpan">
 
             <div class="form-grid form-grid--2">

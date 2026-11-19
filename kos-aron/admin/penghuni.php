@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../includes/config.php';
+require_role('admin', '../login.php');
 require_once __DIR__ . '/../data/penghuni.php'; // juga memuat data kamar
 
 $judulHalaman = 'Data Penghuni';

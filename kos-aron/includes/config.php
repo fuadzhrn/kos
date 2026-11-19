@@ -52,3 +52,7 @@ const FOTO_PLACEHOLDER  = 'assets/images/placeholder.svg';
 const FOTO_BANGUNAN_KOS = 'bangunan.jpg';
 
 require_once __DIR__ . '/functions.php';
+require_once __DIR__ . '/auth.php';
+
+// Sesi PHP harus aktif sebelum output apa pun dikirim (lihat includes/auth.php).
+mulai_sesi();

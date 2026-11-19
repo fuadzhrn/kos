@@ -738,6 +738,10 @@ select.form-control {
     border-left-color: var(--success);
 }
 
+.notice--galat {
+    border-left-color: #B91C1C;
+}
+
 .empty-state {
     padding: 28px 24px;
     text-align: center;

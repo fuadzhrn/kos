@@ -1,0 +1,91 @@
+<mxfile host="app.diagrams.net" modified="2026-11-19T00:00:00.000Z" agent="claude-code" version="24.0.0" type="device">
+  <diagram id="erd-kos-aron" name="ERD db_kos_aron">
+    <mxGraphModel dx="1400" dy="800" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1100" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- users -->
+        <mxCell id="t_users" value="users&#10;----------------------------&#10;PK  id&#10;UQ  username&#10;    password_hash&#10;    role (admin|penghuni)&#10;    nama&#10;    status (aktif|nonaktif)&#10;    last_login_at" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacingLeft=8;spacingTop=6;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="40" y="40" width="240" height="170" as="geometry" />
+        </mxCell>
+
+        <!-- penghuni -->
+        <mxCell id="t_penghuni" value="penghuni&#10;----------------------------&#10;PK  id&#10;FK  user_id -&gt; users.id (UQ, null)&#10;    nama&#10;    no_telepon&#10;    email&#10;    keterangan" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacingLeft=8;spacingTop=6;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="380" y="40" width="240" height="150" as="geometry" />
+        </mxCell>
+
+        <!-- kamar -->
+        <mxCell id="t_kamar" value="kamar&#10;----------------------------&#10;PK  id&#10;UQ  nomor&#10;    harga&#10;    deskripsi, fasilitas (JSON)&#10;    foto_utama, galeri (JSON)&#10;    status (kosong|terisi) [cache]" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacingLeft=8;spacingTop=6;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="720" y="40" width="260" height="150" as="geometry" />
+        </mxCell>
+
+        <!-- penyewaan -->
+        <mxCell id="t_penyewaan" value="penyewaan&#10;----------------------------&#10;PK  id&#10;FK  penghuni_id -&gt; penghuni.id&#10;FK  kamar_id -&gt; kamar.id&#10;FK  dibuat_oleh -&gt; users.id&#10;    harga_sewa_disepakati&#10;    hari_jatuh_tempo (1-31)&#10;    tanggal_masuk, tanggal_keluar&#10;    status (aktif|selesai)&#10;UQ  kamar aktif (generated)&#10;UQ  penghuni aktif (generated)" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacingLeft=8;spacingTop=6;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="380" y="280" width="280" height="220" as="geometry" />
+        </mxCell>
+
+        <!-- tagihan -->
+        <mxCell id="t_tagihan" value="tagihan&#10;----------------------------&#10;PK  id&#10;FK  penyewaan_id -&gt; penyewaan.id&#10;FK  dibuat_oleh -&gt; users.id&#10;    periode (YYYY-MM)&#10;    jumlah&#10;    jatuh_tempo&#10;    keterangan&#10;UQ  (penyewaan_id, periode)&#10;    status: DIHITUNG, tidak disimpan" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacingLeft=8;spacingTop=6;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="740" y="280" width="260" height="190" as="geometry" />
+        </mxCell>
+
+        <!-- pembayaran -->
+        <mxCell id="t_pembayaran" value="pembayaran&#10;----------------------------&#10;PK  id&#10;FK  tagihan_id -&gt; tagihan.id (UQ)&#10;FK  dicatat_oleh -&gt; users.id&#10;    tanggal_bayar&#10;    nominal_dibayar&#10;    metode (tunai|transfer)&#10;    keterangan" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacingLeft=8;spacingTop=6;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="1060" y="280" width="260" height="170" as="geometry" />
+        </mxCell>
+
+        <!-- notifikasi -->
+        <mxCell id="t_notifikasi" value="notifikasi&#10;----------------------------&#10;PK  id&#10;FK  penghuni_id -&gt; penghuni.id&#10;FK  tagihan_id -&gt; tagihan.id (null)&#10;    tipe (pengingat|terlambat|lunas)&#10;    judul, pesan, tanggal&#10;    dibaca, dibaca_pada&#10;UQ  (tagihan_id, tipe)" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacingLeft=8;spacingTop=6;fillColor=#f8cecc;strokeColor=#b85450;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="740" y="540" width="260" height="180" as="geometry" />
+        </mxCell>
+
+        <!-- pengaturan -->
+        <mxCell id="t_pengaturan" value="pengaturan&#10;----------------------------&#10;PK  kunci&#10;FK  updated_oleh -&gt; users.id&#10;    nilai&#10;    updated_at" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacingLeft=8;spacingTop=6;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="40" y="540" width="240" height="130" as="geometry" />
+        </mxCell>
+
+        <!-- Relasi utama -->
+        <mxCell id="e1" value="1 : 0..1" style="edgeStyle=entityRelationEdgeStyle;html=1;endArrow=ERmany;startArrow=ERone;rounded=0;fontSize=11;" edge="1" parent="1" source="t_users" target="t_penghuni">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e2" value="1 : N" style="edgeStyle=entityRelationEdgeStyle;html=1;endArrow=ERmany;startArrow=ERone;rounded=0;fontSize=11;" edge="1" parent="1" source="t_penghuni" target="t_penyewaan">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e3" value="1 : N" style="edgeStyle=entityRelationEdgeStyle;html=1;endArrow=ERmany;startArrow=ERone;rounded=0;fontSize=11;" edge="1" parent="1" source="t_kamar" target="t_penyewaan">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e4" value="1 : N" style="edgeStyle=entityRelationEdgeStyle;html=1;endArrow=ERmany;startArrow=ERone;rounded=0;fontSize=11;" edge="1" parent="1" source="t_penyewaan" target="t_tagihan">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e5" value="1 : 0..1" style="edgeStyle=entityRelationEdgeStyle;html=1;endArrow=ERmany;startArrow=ERone;rounded=0;fontSize=11;" edge="1" parent="1" source="t_tagihan" target="t_pembayaran">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e6" value="1 : N" style="edgeStyle=entityRelationEdgeStyle;html=1;endArrow=ERmany;startArrow=ERone;rounded=0;fontSize=11;" edge="1" parent="1" source="t_tagihan" target="t_notifikasi">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e7" value="1 : N" style="edgeStyle=entityRelationEdgeStyle;html=1;endArrow=ERmany;startArrow=ERone;rounded=0;fontSize=11;" edge="1" parent="1" source="t_penghuni" target="t_notifikasi">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Relasi audit (dibuat_oleh / dicatat_oleh / updated_oleh), digambar putus-putus -->
+        <mxCell id="e8" value="dibuat_oleh" style="edgeStyle=entityRelationEdgeStyle;html=1;endArrow=ERmany;startArrow=ERone;rounded=0;dashed=1;strokeColor=#999999;fontColor=#999999;fontSize=10;" edge="1" parent="1" source="t_users" target="t_penyewaan">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e9" value="dibuat_oleh" style="edgeStyle=entityRelationEdgeStyle;html=1;endArrow=ERmany;startArrow=ERone;rounded=0;dashed=1;strokeColor=#999999;fontColor=#999999;fontSize=10;" edge="1" parent="1" source="t_users" target="t_tagihan">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e10" value="dicatat_oleh" style="edgeStyle=entityRelationEdgeStyle;html=1;endArrow=ERmany;startArrow=ERone;rounded=0;dashed=1;strokeColor=#999999;fontColor=#999999;fontSize=10;" edge="1" parent="1" source="t_users" target="t_pembayaran">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e11" value="updated_oleh" style="edgeStyle=entityRelationEdgeStyle;html=1;endArrow=ERmany;startArrow=ERone;rounded=0;dashed=1;strokeColor=#999999;fontColor=#999999;fontSize=10;" edge="1" parent="1" source="t_users" target="t_pengaturan">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="legend" value="Keterangan: garis solid = relasi data utama. Garis putus-putus abu-abu = relasi audit (siapa yang membuat/mencatat/mengubah)." style="text;html=1;align=left;verticalAlign=top;fontSize=11;fontColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="1060" y="470" width="420" height="40" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

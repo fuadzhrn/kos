@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../includes/config.php';
+require_role('penghuni', '../login.php');
 require_once __DIR__ . '/../data/notifikasi.php'; // juga memuat data tagihan, penghuni, kamar & pembayaran
 
 $judulHalaman = 'Notifikasi';
