@@ -1080,3 +1080,61 @@ input[readonly].form-control {
         display: none;
     }
 }
+
+/* 9. Laporan (filter + cetak) --------------------------------- */
+.laporan-periode-cetak {
+    margin: -8px 0 20px;
+    font-size: 13px;
+    color: var(--muted);
+}
+
+.laporan-periode-cetak strong {
+    color: var(--heading);
+}
+
+/* 10. Cetak (Laporan) ------------------------------------------ */
+@media print {
+    /* Sembunyikan chrome dashboard: hanya isi laporan yang dicetak. */
+    .sidebar,
+    .sidebar-backdrop,
+    .topbar,
+    .toolbar,
+    [data-cetak-laporan],
+    .admin-catatan {
+        display: none !important;
+    }
+
+    body,
+    .admin-layout,
+    .admin-main,
+    .admin-content {
+        display: block !important;
+        width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        background: #fff !important;
+    }
+
+    .admin-content {
+        max-width: none !important;
+    }
+
+    .panel {
+        border: 1px solid #000;
+        box-shadow: none;
+        break-inside: avoid;
+    }
+
+    .tabel-wrap {
+        overflow: visible;
+    }
+
+    .tabel--lebar {
+        min-width: 0;
+    }
+
+    a {
+        color: inherit;
+        text-decoration: none;
+    }
+}

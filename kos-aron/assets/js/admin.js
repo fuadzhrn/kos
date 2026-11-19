@@ -381,13 +381,20 @@
                 e.preventDefault();
                 var p = JSON.parse(a.getAttribute('data-lihat-pembayaran'));
 
-                dialog.querySelector('[data-detail-nama]').textContent = p.nama_penghuni;
-                dialog.querySelector('[data-detail-kamar]').textContent = 'Kamar ' + p.nomor_kamar;
-                dialog.querySelector('[data-detail-periode]').textContent = p.periode_tampil;
-                dialog.querySelector('[data-detail-nominal-tagihan]').textContent = p.nominal_tagihan_tampil;
-                dialog.querySelector('[data-detail-tanggal]').textContent = p.tanggal_tampil;
-                dialog.querySelector('[data-detail-nominal-dibayar]').textContent = p.nominal_dibayar_tampil;
-                dialog.querySelector('[data-detail-metode]').textContent = p.metode_tampil;
+                // Setiap baris bersifat OPSIONAL: beberapa halaman (mis. penghuni/riwayat.php,
+                // sudah jelas milik satu penghuni) sengaja tidak menampilkan baris "Nama Penghuni".
+                // querySelector mengembalikan null untuk baris yang memang tidak ada di modal.
+                var isi = function (atribut, teks) {
+                    var el = dialog.querySelector('[' + atribut + ']');
+                    if (el) el.textContent = teks;
+                };
+                isi('data-detail-nama', p.nama_penghuni);
+                isi('data-detail-kamar', 'Kamar ' + p.nomor_kamar);
+                isi('data-detail-periode', p.periode_tampil);
+                isi('data-detail-nominal-tagihan', p.nominal_tagihan_tampil);
+                isi('data-detail-tanggal', p.tanggal_tampil);
+                isi('data-detail-nominal-dibayar', p.nominal_dibayar_tampil);
+                isi('data-detail-metode', p.metode_tampil);
 
                 var keteranganEl = dialog.querySelector('[data-detail-keterangan-baris]');
                 if (keteranganEl) {
@@ -458,6 +465,16 @@
         konfirmasi.addEventListener('input', cek);
     }
 
+    /* ------------------------------------------------------
+       Tombol "Cetak Laporan" (admin/laporan.php): memakai
+       window.print() + CSS @media print, bukan membuat PDF/file baru.
+       ------------------------------------------------------ */
+    function initCetak() {
+        var tombol = document.querySelector('[data-cetak-laporan]');
+        if (!tombol) return;
+        tombol.addEventListener('click', function () { window.print(); });
+    }
+
     document.addEventListener('DOMContentLoaded', function () {
         initSidebar();
         initMenuUser();
@@ -470,5 +487,6 @@
         initModalDetailPembayaran();
         initTogglePassword();
         initFormPassword();
+        initCetak();
     });
 })();

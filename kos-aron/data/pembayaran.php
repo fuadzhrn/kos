@@ -109,6 +109,28 @@ function get_pembayaran_by_penghuni(int $penghuniId, int $batas = PHP_INT_MAX): 
 }
 
 /**
+ * Ringkasan pembayaran untuk tagihan pada satu PERIODE TAGIHAN tertentu
+ * (dipakai di Laporan Admin, selaras dengan filter periode yang sama dengan
+ * ringkasan_tagihan_periode()). $periode = null berarti semua periode.
+ * Beda dengan ringkasan_pembayaran_bulan_ini(): fungsi itu berdasarkan
+ * TANGGAL PEMBAYARAN diterima (kas bulan berjalan), bukan periode tagihannya.
+ *
+ * @return array{jumlah: int, total: int}
+ */
+function ringkasan_pembayaran_periode(?string $periode = null): array
+{
+    $hasil = ['jumlah' => 0, 'total' => 0];
+    foreach (get_semua_pembayaran() as $pembayaran) {
+        if ($periode !== null && $pembayaran['periode_tagihan'] !== $periode) {
+            continue;
+        }
+        $hasil['jumlah']++;
+        $hasil['total'] += $pembayaran['nominal_dibayar'];
+    }
+    return $hasil;
+}
+
+/**
  * Ringkasan pembayaran pada satu bulan kalender (default: bulan berjalan).
  *
  * @param string|null $bulan Format YYYY-MM, default bulan dari tanggal_hari_ini()

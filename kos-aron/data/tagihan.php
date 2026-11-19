@@ -172,6 +172,29 @@ function cari_tagihan_periode(int $penghuniId, string $periode, ?int $kecualiId 
 }
 
 /**
+ * Ringkasan tagihan untuk satu periode tertentu (dipakai di Laporan Admin).
+ * $periode = null berarti semua periode.
+ *
+ * @return array{jumlah: int, total: int, belum_lunas_jumlah: int, belum_lunas_total: int}
+ */
+function ringkasan_tagihan_periode(?string $periode = null): array
+{
+    $hasil = ['jumlah' => 0, 'total' => 0, 'belum_lunas_jumlah' => 0, 'belum_lunas_total' => 0];
+    foreach (get_semua_tagihan() as $tagihan) {
+        if ($periode !== null && $tagihan['periode'] !== $periode) {
+            continue;
+        }
+        $hasil['jumlah']++;
+        $hasil['total'] += $tagihan['jumlah'];
+        if ($tagihan['status'] !== 'lunas') {
+            $hasil['belum_lunas_jumlah']++;
+            $hasil['belum_lunas_total'] += $tagihan['jumlah'];
+        }
+    }
+    return $hasil;
+}
+
+/**
  * Ringkasan tagihan yang belum lunas (belum bayar + terlambat).
  *
  * @return array{jumlah: int, total: int, terlambat: int}
