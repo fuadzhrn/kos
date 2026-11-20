@@ -133,9 +133,9 @@ require __DIR__ . '/includes/header.php';
                     <select id="kamar_id" name="kamar_id" class="form-control" <?= $modeEdit ? '' : 'required' ?>>
                         <option value="">Pilih kamar</option>
                         <?php foreach (get_semua_kamar() as $k): ?>
-                            <option value="<?= (int)$k['id'] ?>" <?= $k['status'] === 'terisi' ? 'disabled' : '' ?>
+                            <option value="<?= (int)$k['id'] ?>" <?= !$k['dapat_dipesan'] ? 'disabled' : '' ?>
                                 <?= $nilai['kamar_id'] === (string)$k['id'] ? 'selected' : '' ?>>
-                                Kamar <?= e($k['nomor']) ?> (<?= e(label_status($k['status'])) ?>)
+                                Kamar <?= e($k['nomor']) ?> (<?= e($k['dapat_dipesan'] || $k['status'] === 'terisi' ? label_status($k['status']) : 'Tidak tersedia untuk sewa') ?>)
                             </option>
                         <?php endforeach; ?>
                     </select>

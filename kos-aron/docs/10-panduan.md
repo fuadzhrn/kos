@@ -13,7 +13,7 @@ Aplikasi memakai PHP native, PDO MySQL, HTML, CSS dan JavaScript vanilla. Penguj
    ```
 
    Diperlukan PDO, pdo_mysql, mbstring, fileinfo, JSON dan session. Berikan akses tulis pada direktori sesi PHP serta `assets/images/kamar` dan `assets/images/kos`. Untuk situs publik aktifkan HTTPS dan arahkan log PHP ke lokasi privat.
-3. Pada **instalasi baru dengan database kosong**, impor `database/schema.sql` melalui klien MySQL 8.4 atau phpMyAdmin yang tersambung ke layanan itu. Berkas ini memilih `db_kos_aron` dan berisi DROP TABLE. Untuk instalasi terdahulu lakukan backup terpisah, cocokkan versi skema, lalu gunakan migrasi 07 dan 09 yang belum diterapkan. Simpan seed khusus untuk database pengujian.
+3. Pada **instalasi baru dengan database kosong**, impor `database/schema.sql` melalui klien MySQL 8.4 atau phpMyAdmin yang tersambung ke layanan itu. Berkas ini memilih `db_kos_aron` dan berisi DROP TABLE. Untuk instalasi terdahulu lakukan backup terpisah, cocokkan versi skema, lalu gunakan migrasi 07 dan 09 yang belum diterapkan. Untuk instalasi baru maupun upgrade dari sembilan tabel, pilih database aplikasi dan impor `database/migrasi-registrasi-pemesanan.sql` setelah skema dasar tersedia. Simpan seed khusus untuk database pengujian.
 4. Salin `includes/database.local.example.php` menjadi `includes/database.local.php`. Isi host, port, nama database, dan akun aplikasi yang telah diberi akses. Gunakan akun terpisah untuk operasi DDL. Simpan kredensial di luar Git.
 5. Dari terminal, jalankan perintah berikut. Pembuatan admin meminta identitas dan password secara interaktif.
 
@@ -29,8 +29,8 @@ Aplikasi memakai PHP native, PDO MySQL, HTML, CSS dan JavaScript vanilla. Penguj
 
 | Peran | Kegiatan |
 |---|---|
-| Pengunjung | Beranda, daftar dan detail kamar publik, Tentang, Kontak, dan Login. Tombol WhatsApp membuka percakapan kepada pemilik ketika kontak sudah diisi. |
-| Admin atau pemilik | Mengelola kamar, penghuni dan sewa, membuat tagihan, mencatat atau mengoreksi pembayaran, mencetak laporan, mengubah pengaturan dan password sendiri. |
+| Pengunjung | Beranda, daftar dan detail kamar, registrasi untuk pemesanan, Tentang, Kontak, dan Login. Tombol WhatsApp membuka percakapan kepada pemilik ketika kontak sudah diisi. |
+| Admin atau pemilik | Meninjau dan mengaktifkan pemesanan, mengelola kamar, penghuni dan sewa, membuat tagihan, mencatat atau mengoreksi pembayaran, mencetak laporan, mengubah pengaturan dan password sendiri. |
 | Penghuni aktif yang login | Melihat kamar, tagihan, pembayaran dan notifikasi miliknya. Mengubah profil yang diizinkan serta password sendiri. Logout mengakhiri sesi. |
 
 ## Panduan admin
@@ -41,6 +41,8 @@ Aplikasi memakai PHP native, PDO MySQL, HTML, CSS dan JavaScript vanilla. Penguj
 4. **Data Pembayaran.** Setelah uang diterima, pilih Catat Pembayaran. Pilih tagihan belum lunas, cocokkan nominal penuh, masukkan tanggal, metode tunai atau transfer, dan keterangan. Periksa Detail. Untuk salah pencatatan, buka koreksi atau pembatalan, jelaskan alasannya. Pembatalan membuka tagihan kembali dan menyimpan transaksi lama beserta jurnal. Untuk mengganti tagihan yang salah, batalkan lalu catat pada tagihan yang benar.
 5. **Laporan.** Pilih periode dan jenis laporan. Pembayaran dikelompokkan sesuai periode tagihan. Selisih antara total tagihan dan pembayaran sah menunjukkan sisa tagihan. Kondisi hunian mengacu pada tanggal yang tertulis di laporan. Klik Cetak Laporan untuk mencetak atau menyimpan PDF.
 6. **Pengaturan.** Simpan nama kos, deskripsi, alamat, nomor WhatsApp berkode negara, tautan Google Maps dan foto. Periksa Beranda, Tentang dan Kontak sesudah menyimpan. Form password meminta password saat ini, password baru dan konfirmasinya.
+
+Untuk memproses calon penghuni dari pengajuan publik, ikuti [panduan pemesanan](registrasi-pemesanan.md).
 
 ## Panduan penghuni
 

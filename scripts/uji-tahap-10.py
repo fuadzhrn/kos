@@ -47,7 +47,7 @@ def test_database(app):
             $start = strpos($schema, 'CREATE TABLE users (');
             $rows = strpos($seed, 'INSERT INTO users (');
             if ($start === false || $rows === false) exit(2);
-            $ddl = substr($schema,$start);
+            $ddl = substr($schema,$start).file_get_contents('database/migrasi-registrasi-pemesanan.sql');
             $dml = substr($seed,$rows);
             if (preg_match('/^\s*(USE|DROP|TRUNCATE|CREATE DATABASE)\b/im',$ddl."\n".$dml)) exit(2);
             $db->exec($ddl);

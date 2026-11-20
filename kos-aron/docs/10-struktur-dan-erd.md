@@ -2,7 +2,7 @@
 
 | Lokasi | Isi |
 |---|---|
-| `kos-aron/*.php` | Enam halaman publik termasuk login, serta endpoint logout. |
+| `kos-aron/*.php` | Halaman publik termasuk detail kamar, formulir pemesanan, login dan endpoint logout. |
 | `admin/`, `penghuni/` | Halaman sesuai peran dan komponen navigasi masing-masing. |
 | `includes/` | Bootstrap, sesi, otorisasi, CSRF, koneksi PDO, pemformatan, unggahan dan layout publik. |
 | `data/` | Kueri dan transaksi kamar, penghuni, penyewaan, tagihan, pembayaran, notifikasi, laporan dan pengaturan. |
@@ -15,6 +15,10 @@
 
 ```mermaid
 erDiagram
+    CALON_PENGHUNI ||--o{ PEMESANAN : mengajukan
+    KAMAR ||--o{ PEMESANAN : dipilih
+    USERS o|--o{ PEMESANAN : memproses
+    PENYEWAAN o|--o| PEMESANAN : menindaklanjuti
     USERS o|--o| PENGHUNI : "akun profil"
     PENGHUNI ||--o{ PENYEWAAN : menyewa
     KAMAR ||--o{ PENYEWAAN : ditempati
@@ -38,13 +42,15 @@ Satu tagihan dapat memiliki beberapa baris pembayaran sepanjang riwayat pembatal
 | kamar | PK id, nomor unik, harga DECIMAL(12,2), deskripsi, fasilitas dan galeri JSON, foto_utama, kondisi dan waktu perubahan. |
 | penghuni | PK id, FK user_id unik opsional, nama, no_telepon, email, keterangan dan waktu perubahan. |
 | penyewaan | PK id, FK penghuni_id, kamar_id, dibuat_oleh, harga_sewa_disepakati, hari_jatuh_tempo 1–31, tanggal masuk/keluar, status, keterangan dan waktu perubahan. Kolom generated berindeks unik menjaga kamar dan penghuni aktif. |
+| calon_penghuni | PK id, nama lengkap, nomor telepon untuk pencocokan, email opsional dan tanggal daftar. |
+| pemesanan | PK id, referensi unik, FK calon, kamar, admin pemroses dan penyewaan. Satu persetujuan yang belum dikonversi per kamar. |
 | tagihan | PK id, FK penyewaan_id dan dibuat_oleh, periode YYYY-MM, jumlah, jatuh_tempo, keterangan dan waktu perubahan. Unik per penyewaan dan periode. |
 | pembayaran | PK id, FK tagihan_id dan dicatat_oleh, tanggal_bayar, nominal_dibayar, metode, keterangan, status dan waktu perubahan. Kolom generated tagihan_aktif_unik menjaga satu pembayaran sah. |
 | pembayaran_audit | PK id, FK pembayaran_id dan admin_id, aksi, waktu, alasan, sebelum dan sesudah dalam JSON. |
 | notifikasi | PK id, FK penghuni_id dan tagihan_id, tipe, peristiwa, judul, pesan, tanggal, dibaca, dibaca_pada dan created_at. Kombinasi tagihan, tipe dan peristiwa unik. |
 | pengaturan | PK kunci, nilai, updated_at dan FK updated_oleh. Nilai publik meliputi nama, deskripsi, alamat, kontak, Maps dan nama file foto. |
 
-Definisi kolom, tipe, indeks, aturan foreign key dan nilai default dapat diperiksa pada [skema SQL final](../database/schema.sql).
+Definisi kolom, tipe, indeks, aturan foreign key dan nilai default dapat diperiksa pada [skema dasar](../database/schema.sql) dan [migrasi pemesanan](../database/migrasi-registrasi-pemesanan.sql).
 
 ## Alur transaksi
 

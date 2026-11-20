@@ -73,14 +73,19 @@ function kunci_profil_sewa(PDO $db, int $id): array
     return [$profil['user_id'], $stmt->fetch() ?: null];
 }
 
-function simpan_penghuni(?int $id, array $nilai, string $password, int $adminId): int
+function simpan_penghuni(?int $id, array $nilai, string $password, int $adminId, ?int $pemesananId = null): int
 {
     $nama = $nilai['nama'];
     $telepon = $nilai['no_telepon'];
     $akun = $nilai['akun'];
     validasi_identitas_penghuni($nama, $telepon);
     $db = koneksi_database();
-    $db->beginTransaction();
+    // Konversi pemesanan memakai transaksi pemanggil hingga relasi penyewaan tersimpan.
+    if ($pemesananId === null) {
+        $db->beginTransaction();
+    } elseif (!$db->inTransaction()) {
+        throw new LogicException('Konversi membutuhkan transaksi aktif.');
+    }
     try {
         [$userId, $aktif] = $id === null ? [null, null] : kunci_profil_sewa($db, $id);
         if ((string)($aktif['id'] ?? '') !== $nilai['sewa_aktif']) {
@@ -139,6 +144,9 @@ function simpan_penghuni(?int $id, array $nilai, string $password, int $adminId)
             if ($stmt->fetchColumn() !== 'aktif') {
                 throw new DomainException('Kamar tidak tersedia untuk disewakan.');
             }
+            if (pemesanan_penahan_kamar($db, $kamarId) !== $pemesananId) {
+                throw new DomainException('Kamar ditahan oleh pemesanan atau persetujuan telah berubah.');
+            }
             $stmt = $db->prepare("SELECT id FROM penyewaan WHERE (kamar_id = ? OR penghuni_id = ?)
                 AND (status = 'aktif' OR tanggal_keluar > ?) LIMIT 1 FOR UPDATE");
             $stmt->execute([$kamarId, $id, $tanggal]);
@@ -149,10 +157,12 @@ function simpan_penghuni(?int $id, array $nilai, string $password, int $adminId)
                 VALUES (?,?,?,?,?,?)');
             $stmt->execute([$id,$kamarId,$tanggal,$nilai['harga_sewa_disepakati'],$nilai['hari_jatuh_tempo'],$adminId]);
         }
-        $db->commit();
+        if ($pemesananId === null) {
+            $db->commit();
+        }
         return $id;
     } catch (Throwable $error) {
-        if ($db->inTransaction()) {
+        if ($pemesananId === null && $db->inTransaction()) {
             $db->rollBack();
         }
         if ($error instanceof PDOException && ($error->errorInfo[1] ?? null) === 1062) {

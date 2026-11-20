@@ -39,6 +39,7 @@ require __DIR__ . '/includes/header.php';
                         <option value="semua">Semua Kamar</option>
                         <option value="kosong">Tersedia</option>
                         <option value="terisi">Terisi</option>
+                        <option value="dipesan">Dipesan</option>
                     </select>
                 </div>
 

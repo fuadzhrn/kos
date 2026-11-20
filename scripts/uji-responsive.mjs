@@ -19,8 +19,8 @@ const env = { ...process.env, ARON_RESP_DB: db, ARON_RESP_PASS: password };
 const setup = "require 'includes/database.local.php'; $name=getenv('ARON_RESP_DB'); if(!preg_match('/^uji_aron_10_[0-9a-f]{16}$/D',$name)) exit(2); $s=new PDO('mysql:host='.DB_HOST.';port='.DB_PORT, DB_USER,DB_PASS); ";
 const sizes = [[1440,900],[1024,768],[768,1024],[390,844],[360,800]];
 const groups = [
-    ['', '', ['index.php','kamar.php','detail-kamar.php?id=1','detail-kamar.php?id=2','detail-kamar.php?id=4','tentang.php','kontak.php','login.php']],
-    ['admin/', 'admin', ['index.php','kamar.php','kamar-form.php','kamar-form.php?id=1','penghuni.php','penghuni-form.php','penghuni-form.php?id=1','penghuni-detail.php?id=1','tagihan.php','tagihan.php?form=baru','tagihan.php?form=massal','pembayaran.php','pembayaran.php?form=baru','pembayaran.php?lihat=2','laporan.php?bulan=&tahun=','pengaturan.php']],
+    ['', '', ['index.php','kamar.php','detail-kamar.php?id=1','detail-kamar.php?id=2','detail-kamar.php?id=4','pesan-kamar.php?id=1','tentang.php','kontak.php','login.php']],
+    ['admin/', 'admin', ['index.php','kamar.php','kamar-form.php','kamar-form.php?id=1','penghuni.php','penghuni-form.php','penghuni-form.php?id=1','penghuni-detail.php?id=1','pemesanan.php','pemesanan-detail.php?id=1','tagihan.php','tagihan.php?form=baru','tagihan.php?form=massal','pembayaran.php','pembayaran.php?form=baru','pembayaran.php?lihat=2','laporan.php?bulan=&tahun=','pengaturan.php']],
     ['penghuni/', 'ahmad.fauzi', ['index.php','kamar.php','tagihan.php','riwayat.php','riwayat.php?lihat=2','notifikasi.php','profil.php']],
 ];
 function php(cwd, code, ...args) {
@@ -144,10 +144,12 @@ try {
     created = true;
     php(root, setup+String.raw`$conf="<?php\n"; foreach (['DB_HOST'=>DB_HOST,'DB_PORT'=>DB_PORT,'DB_USER'=>DB_USER,'DB_PASS'=>DB_PASS,'DB_NAME'=>$name] as $k=>$v) $conf.='define('.var_export($k,true).','.var_export($v,true).");\n"; file_put_contents($argv[1],$conf);`, join(app,'includes','database.local.php'));
     php(app, `require 'includes/koneksi.php'; $db=koneksi_database(); if ($db->query('SELECT DATABASE()')->fetchColumn()!==getenv('ARON_RESP_DB')) exit(2);
-        foreach (['schema.sql'=>'CREATE TABLE users (','seed.sql'=>'SET FOREIGN_KEY_CHECKS'] as $file=>$start) {
+        foreach (['schema.sql'=>'CREATE TABLE users (','migrasi-registrasi-pemesanan.sql'=>'CREATE TABLE IF NOT EXISTS calon_penghuni','seed.sql'=>'SET FOREIGN_KEY_CHECKS'] as $file=>$start) {
             $sql=file_get_contents('database/'.$file); $index=strpos($sql,$start); if ($index===false) exit(2);
             $db->exec(substr($sql,$index));
         }
+        $db->exec("INSERT INTO calon_penghuni (nama_lengkap,nomor_telepon,tanggal_daftar) VALUES ('Calon Uji Tampilan','080000000123',CURRENT_DATE)");
+        $db->exec("INSERT INTO pemesanan (kode_pemesanan,calon_penghuni_id,kamar_id,tanggal_pengajuan,rencana_tanggal_masuk) VALUES ('KA-0000000000000001',1,1,NOW(),CURRENT_DATE)");
         $db->prepare("UPDATE users SET status='aktif', password_hash=? WHERE username IN ('admin','ahmad.fauzi')")->execute([password_hash(getenv('ARON_RESP_PASS'),PASSWORD_DEFAULT)]);`);
     const port = await freePort();
     const base = 'http://127.0.0.1:'+port+'/';

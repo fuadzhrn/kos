@@ -1,7 +1,7 @@
 # 5. Panduan Import Database (XAMPP / Laragon + phpMyAdmin)
 
 File yang dibutuhkan ada di folder `database/`:
-- `database/schema.sql` — struktur 8 tabel (DDL saja, tanpa data).
+- `database/schema.sql` memuat sembilan tabel dasar. Setelah memilih database, impor `database/migrasi-registrasi-pemesanan.sql` untuk menambahkan dua tabel pemesanan. Pada database yang sudah berjalan, gunakan hanya migrasi yang diperlukan setelah backup.
 - `database/seed.sql` — data uji fiktif (lihat `database/seed.sql` untuk rincian skenario).
 
 > **Peringatan sebelum menjalankan ulang**: `schema.sql` melakukan
@@ -21,10 +21,10 @@ File yang dibutuhkan ada di folder `database/`:
    `schema.sql` sudah memuat `CREATE DATABASE IF NOT EXISTS db_kos_aron`).
 4. Pilih file `database/schema.sql` → klik **Go** / **Kirim**.
    Pastikan muncul pesan sukses, lalu tabel `db_kos_aron` akan terlihat di
-   panel kiri dengan 8 tabel.
+   panel kiri dengan sembilan tabel dasar.
 5. Pastikan database aktif adalah `db_kos_aron` (klik nama database di
    panel kiri dahulu), lalu ulangi langkah Import dengan file
-   `database/seed.sql` untuk mengisi data uji.
+   `database/migrasi-registrasi-pemesanan.sql`. Periksa bahwa ada sebelas tabel. Khusus database pengujian kosong, data fiktif dapat diisi dengan `database/seed.sql`.
 6. Klik tab **Structure** pada tiap tabel untuk memeriksa kolom, lalu tab
    **Relation view** (di bagian bawah Structure) untuk memeriksa foreign key.
 
@@ -39,6 +39,8 @@ selagi Apache & MySQL Laragon berjalan.
 ```bash
 # Dari folder kos-aron/
 mysql -u root -p < database/schema.sql
+mysql -u root -p db_kos_aron < database/migrasi-registrasi-pemesanan.sql
+# Opsional, hanya pada database uji kosong
 mysql -u root -p db_kos_aron < database/seed.sql
 ```
 
@@ -52,7 +54,7 @@ mysqldump -u root db_kos_aron > backup-db_kos_aron-2026-11-19.sql
 
 Simpan hasil `mysqldump` di luar folder project (atau pastikan tidak ikut
 Git — pola `*.sql` di `.gitignore` memang sengaja mengabaikan dump data
-sungguhan, hanya `schema.sql` dan `seed.sql` yang dikecualikan).
+sungguhan, berkas skema, migrasi struktur dan seed fiktif dikecualikan).
 
 ## 5.5 Menyiapkan konfigurasi koneksi (sekali saja per environment)
 

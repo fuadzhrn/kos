@@ -171,3 +171,9 @@ Putaran akhir lulus 19 kelompok pemeriksaan. Lint 48 file PHP dan pemeriksaan si
 Matriks Black Box mencatat 26 skenario berhasil. Chrome memeriksa 31 keadaan halaman pada lima ukuran layar, termasuk pemuatan WebP publik dan admin. Pengujian dilakukan dengan salinan aplikasi dan MySQL sementara. Database operasional tidak dimodifikasi untuk pemasangan ilustrasi. Beranda dan Tentang memakai ilustrasi lokal ketika foto bangunan belum tersedia. Kamar contoh 01, 02 dan 04 memakai gambar konsisten pada kartu, detail dan Data Kamar, dengan prioritas bagi foto utama dan galeri asli.
 
 Lihat [laporan audit, perbaikan dan pekerjaan terbuka](10-audit-akhir.md), [matriks Black Box](10-black-box.md), [hasil tampilan](10-responsive.md) dan [indeks panduan](README.md). Status penerapan masih mencakup pemisahan tiga akun contoh di database development, pengujian scheduler dan host tujuan, serta pengumpulan SUS dari 15 responden.
+
+## 20 November 2026 — Pemesanan kamar sesuai proposal, Tahap 2
+
+Pengajuan publik dan identitas calon disimpan di MySQL. Satu persetujuan berlaku per kamar. Pemeriksaan pada jalur tambah penghuni manual juga melindungi kamar yang sedang ditahan. Aktivasi menyimpan akun, profil, penyewaan dan kaitan ke pemesanan secara atomik.
+
+Dua proses PHP yang menunggu kunci kamar yang sama menghasilkan satu persetujuan. Pengajuan lainnya tetap menunggu. Pengujian integritas juga memeriksa pembatalan, penggunaan kembali akun lama dan batas tiga pengajuan per telepon per jam. Seluruhnya dijalankan pada database fiktif terpisah. Panduan alur dan pemasangan tersedia di [registrasi dan pemesanan](registrasi-pemesanan.md).

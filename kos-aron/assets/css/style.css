@@ -1386,3 +1386,7 @@ select.form-control {
         padding: 24px 20px;
     }
 }
+
+.badge--dipesan { color: var(--muted); }
+.card-kamar__footer .btn + .btn { margin-top: 8px; }
+.aksi-pemesanan { display: flex; flex-wrap: wrap; gap: 10px; }

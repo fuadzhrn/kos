@@ -3,7 +3,7 @@
  * Layout admin: <head>, sidebar, dan topbar.
  * Variabel yang diatur sebelum include:
  *   $judulHalaman  string  Judul halaman (tab browser & topbar)
- *   $menuAktif     string  dashboard | kamar | penghuni | tagihan | pembayaran | laporan | pengaturan
+ *   $menuAktif     string  dashboard | kamar | pemesanan | penghuni | tagihan | pembayaran | laporan | pengaturan
  *
  * Nama admin berasal dari sesi yang telah diperiksa oleh require_role().
  */
@@ -14,6 +14,7 @@ $namaAdmin    = pengguna_login()['nama'] ?? 'Admin Kos Aron';
 $menuAdmin = [
     'dashboard'  => ['Dashboard',     'index.php'],
     'kamar'      => ['Data Kamar',    'kamar.php'],
+    'pemesanan'  => ['Data Pemesanan', 'pemesanan.php'],
     'penghuni'   => ['Data Penghuni', 'penghuni.php'],
     'tagihan'    => ['Tagihan',       'tagihan.php'],
     'pembayaran' => ['Pembayaran',    'pembayaran.php'],

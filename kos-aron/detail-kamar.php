@@ -18,7 +18,9 @@ if ($kamar !== null) {
     $deskripsiMeta = $namaKamar . ' di ' . SITE_NAME . ', ' . SITE_LOCATION . '. Harga sewa '
                    . format_rupiah($kamar['harga']) . ' per bulan.';
 
-    $tersedia   = $kamar['status'] === 'kosong';
+    $tersedia   = $kamar['dapat_dipesan'];
+    $ditahan    = !$tersedia && $kamar['status'] === 'kosong';
+    $labelStatus = $ditahan ? 'Dipesan' : label_status($kamar['status']);
     $daftarFoto = daftar_foto_kamar($kamar);
     $fotoUtama  = $daftarFoto[0] ?? FOTO_PLACEHOLDER;
 
@@ -80,7 +82,7 @@ require __DIR__ . '/includes/header.php';
                 <div class="detail-kamar__info">
                     <div class="detail-kamar__head">
                         <h1><?= e($namaKamar) ?></h1>
-                        <span class="badge badge--<?= e($kamar['status']) ?>"><?= e(label_status($kamar['status'])) ?></span>
+                        <span class="badge badge--<?= $ditahan ? 'dipesan' : e($kamar['status']) ?>"><?= e($labelStatus) ?></span>
                     </div>
 
                     <p class="detail-kamar__harga">
@@ -101,11 +103,16 @@ require __DIR__ . '/includes/header.php';
                     <?php endif; ?>
 
                     <?php if (!$tersedia): ?>
-                        <p class="notice notice--muted">Kamar ini sedang terisi dan belum tersedia untuk disewa.</p>
+                        <p class="notice notice--muted"><?= $ditahan ? 'Pengajuan untuk kamar ini sudah disetujui. Saat ini kamar belum dapat dipesan.' : 'Kamar ini sedang terisi dan belum tersedia untuk disewa.' ?></p>
                     <?php endif; ?>
 
-                    <div class="detail-kamar__aksi">
-                        <a href="<?= e($kontak['url']) ?>" class="btn btn-primary"<?= $atributLink ?>><?= e($labelTombol) ?></a>
+                    <div class="detail-kamar__aksi aksi-pemesanan">
+                        <?php if ($tersedia): ?>
+                            <a href="pesan-kamar.php?id=<?= (int) $id ?>" class="btn btn-primary">Pesan Kamar</a>
+                        <?php else: ?>
+                            <a href="kamar.php" class="btn btn-primary">Lihat Kamar Lain</a>
+                        <?php endif; ?>
+                        <a href="<?= e($kontak['url']) ?>" class="btn btn-outline"<?= $atributLink ?>><?= e($labelTombol) ?></a>
                     </div>
                 </div>
             </div>
@@ -124,7 +131,7 @@ require __DIR__ . '/includes/header.php';
                     </div>
                     <div>
                         <dt>Status</dt>
-                        <dd><span class="badge badge--<?= e($kamar['status']) ?>"><?= e(label_status($kamar['status'])) ?></span></dd>
+                        <dd><span class="badge badge--<?= $ditahan ? 'dipesan' : e($kamar['status']) ?>"><?= e($labelStatus) ?></span></dd>
                     </div>
                     <div>
                         <dt>Fasilitas</dt>
@@ -145,7 +152,7 @@ require __DIR__ . '/includes/header.php';
                     <?php if ($tersedia): ?>
                         Tertarik dengan kamar ini? Hubungi pemilik <?= e(SITE_NAME) ?> untuk informasi lebih lanjut.
                     <?php else: ?>
-                        Kamar ini sedang terisi. Hubungi pemilik <?= e(SITE_NAME) ?> untuk menanyakan ketersediaan atau informasi lainnya.
+                        Hubungi pemilik <?= e(SITE_NAME) ?> untuk menanyakan ketersediaan atau informasi lainnya.
                     <?php endif; ?>
                 </p>
                 <a href="<?= e($kontak['url']) ?>" class="btn btn-primary"<?= $atributLink ?>><?= e($labelTombol) ?></a>

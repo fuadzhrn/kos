@@ -95,6 +95,7 @@ def run_tests(tmp, app):
         php(sql + """
             $schema = file_get_contents('database/schema.sql');
             $db->exec(substr($schema,strpos($schema,'CREATE TABLE users (')));
+            $db->exec(file_get_contents('database/migrasi-registrasi-pemesanan.sql'));
             $db->exec('ALTER TABLE notifikasi DROP INDEX uq_notifikasi_peristiwa,
                 DROP COLUMN peristiwa, ADD UNIQUE KEY uq_notifikasi_tagihan_tipe (tagihan_id,tipe)');
             $seed = file_get_contents('database/seed.sql');

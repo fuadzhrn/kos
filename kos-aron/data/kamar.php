@@ -32,6 +32,17 @@ const SQL_STATUS_KAMAR = "IF(EXISTS(
         SELECT 1 FROM penyewaan s WHERE s.kamar_id = k.id AND s.status = 'aktif'
     ), 'terisi', 'kosong')";
 
+const SQL_KAMAR_DITAHAN = 'EXISTS (SELECT 1 FROM pemesanan b WHERE b.kamar_ditahan_unik = k.id)';
+
+/** Dibaca sesudah baris kamar dikunci oleh transaksi yang mengubah ketersediaan. */
+function pemesanan_penahan_kamar(PDO $db, int $kamarId): ?int
+{
+    $stmt = $db->prepare('SELECT id FROM pemesanan WHERE kamar_ditahan_unik = ? FOR UPDATE');
+    $stmt->execute([$kamarId]);
+    $id = $stmt->fetchColumn();
+    return $id === false ? null : (int)$id;
+}
+
 /** Mengubah satu baris hasil query (k.* + alias status_terhitung) menjadi array kamar. */
 function baris_kamar_ke_array(array $baris): array
 {
@@ -45,6 +56,7 @@ function baris_kamar_ke_array(array $baris): array
         'galeri'    => json_decode($baris['galeri'] ?? '[]', true) ?: [],
         'kondisi'   => $baris['kondisi'],
         'status'    => $baris['status_terhitung'],
+        'dapat_dipesan' => $baris['kondisi'] === 'aktif' && $baris['status_terhitung'] === 'kosong' && empty($baris['ditahan']),
     ];
 }
 
@@ -58,7 +70,7 @@ function baris_kamar_ke_array(array $baris): array
 function get_semua_kamar(bool $sertakanPerawatan = false): array
 {
     $pdo = koneksi_database();
-    $sql = 'SELECT k.*, ' . SQL_STATUS_KAMAR . ' AS status_terhitung FROM kamar k';
+    $sql = 'SELECT k.*, ' . SQL_STATUS_KAMAR . ' AS status_terhitung, ' . SQL_KAMAR_DITAHAN . ' AS ditahan FROM kamar k';
     if (!$sertakanPerawatan) {
         $sql .= " WHERE k.kondisi = 'aktif'";
     }
@@ -72,7 +84,7 @@ function get_semua_kamar(bool $sertakanPerawatan = false): array
 function get_kamar_by_id(int $id): ?array
 {
     $pdo  = koneksi_database();
-    $stmt = $pdo->prepare('SELECT k.*, ' . SQL_STATUS_KAMAR . ' AS status_terhitung FROM kamar k WHERE k.id = :id');
+    $stmt = $pdo->prepare('SELECT k.*, ' . SQL_STATUS_KAMAR . ' AS status_terhitung, ' . SQL_KAMAR_DITAHAN . ' AS ditahan FROM kamar k WHERE k.id = :id');
     $stmt->execute(['id' => $id]);
     $baris = $stmt->fetch();
 
@@ -102,6 +114,7 @@ function get_kamar_tersedia(int $batas): array
         "SELECT k.*, 'kosong' AS status_terhitung FROM kamar k
          WHERE k.kondisi = 'aktif'
            AND NOT EXISTS (SELECT 1 FROM penyewaan s WHERE s.kamar_id = k.id AND s.status = 'aktif')
+           AND NOT " . SQL_KAMAR_DITAHAN . "
          ORDER BY k.nomor
          LIMIT :batas"
     );
@@ -114,11 +127,8 @@ function get_kamar_tersedia(int $batas): array
 /**
  * Jumlah kamar per status (untuk admin, mencakup SEMUA kamar apa pun kondisinya).
  *
- * 'kosong' di sini berarti BENAR-BENAR tersedia disewa (kondisi aktif,
- * tidak ada penyewaan aktif) -- kamar berkondisi 'perawatan' dihitung
- * terpisah sebagai 'perawatan', TIDAK ikut masuk 'kosong', supaya kartu
- * statistik "Tersedia untuk disewa" tidak pernah termasuk kamar yang
- * sebenarnya tidak boleh disewakan.
+ * Kamar kosong berkondisi aktif dihitung terpisah dari perawatan. Pemesanan
+ * yang disetujui tetap dihitung kosong sampai penyewaan aktif dimulai.
  *
  * @return array{total: int, kosong: int, terisi: int, perawatan: int}
  */
@@ -225,6 +235,9 @@ function perbarui_kamar(int $id, array $data): void
             throw new DomainException('Kamar sudah tidak tersedia.');
         }
         if ($data['kondisi'] === 'perawatan') {
+            if (pemesanan_penahan_kamar($pdo, $id) !== null) {
+                throw new DomainException('Batalkan pemesanan yang disetujui sebelum mengubah kondisi kamar menjadi perawatan.');
+            }
             $sewa = $pdo->prepare("SELECT id FROM penyewaan WHERE kamar_id = ? AND status = 'aktif' FOR UPDATE");
             $sewa->execute([$id]);
             if ($sewa->fetchColumn()) {
@@ -262,7 +275,14 @@ function hapus_kamar(int $id): array
 
     $pdo  = koneksi_database();
     $stmt = $pdo->prepare('DELETE FROM kamar WHERE id = :id');
-    $stmt->execute(['id' => $id]);
+    try {
+        $stmt->execute(['id' => $id]);
+    } catch (PDOException $e) {
+        if ((int)($e->errorInfo[1] ?? 0) !== 1451) {
+            throw $e;
+        }
+        return ['berhasil' => false, 'pesan' => 'Kamar dengan riwayat pemesanan atau penyewaan harus tetap tersimpan.'];
+    }
 
     return ['berhasil' => true, 'pesan' => null];
 }

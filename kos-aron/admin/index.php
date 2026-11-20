@@ -36,7 +36,7 @@ require __DIR__ . '/includes/header.php';
     <div class="stat-card">
         <p class="stat-card__label">Kamar Kosong</p>
         <p class="stat-card__nilai"><?= $statKamar['kosong'] ?></p>
-        <p class="stat-card__ket">Tersedia untuk disewa</p>
+        <p class="stat-card__ket">Belum ditempati penghuni</p>
     </div>
     <div class="stat-card">
         <p class="stat-card__label">Tagihan Belum Lunas</p>

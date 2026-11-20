@@ -28,7 +28,7 @@ try {
     $jumlahTerisi = (int) $stmt->fetch()['jumlah'];
     echo "[OK] Prepared statement berjalan. Kamar berstatus 'terisi': {$jumlahTerisi}\n";
 
-    $tabel = ['users', 'kamar', 'penghuni', 'penyewaan', 'tagihan', 'pembayaran', 'pembayaran_audit', 'notifikasi', 'pengaturan'];
+    $tabel = ['users', 'kamar', 'penghuni', 'penyewaan', 'tagihan', 'pembayaran', 'pembayaran_audit', 'notifikasi', 'pengaturan', 'calon_penghuni', 'pemesanan'];
     echo "\nJumlah baris per tabel:\n";
     foreach ($tabel as $nama) {
         $jumlah = (int) $pdo->query('SELECT COUNT(*) AS c FROM `' . $nama . '`')->fetch()['c'];

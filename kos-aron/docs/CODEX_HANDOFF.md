@@ -98,3 +98,9 @@ Admin dapat menyimpan identitas, deskripsi, alamat, WhatsApp, tautan atau semata
 Matriks Black Box mencatat 26 skenario berhasil. Chrome memeriksa 31 keadaan halaman pada lima ukuran layar, termasuk pemuatan WebP publik dan admin. Pengujian dilakukan dengan salinan aplikasi dan MySQL sementara. Database operasional tidak dimodifikasi untuk pemasangan ilustrasi. Beranda dan Tentang memakai ilustrasi lokal ketika foto bangunan belum tersedia. Kamar contoh 01, 02 dan 04 memakai gambar konsisten pada kartu, detail dan Data Kamar, dengan prioritas bagi foto utama dan galeri asli.
 
 Lihat [laporan audit, perbaikan dan pekerjaan terbuka](10-audit-akhir.md), [matriks Black Box](10-black-box.md), [hasil tampilan](10-responsive.md) dan [indeks panduan](README.md). Status penerapan masih mencakup pemisahan tiga akun contoh di database development, pengujian scheduler dan host tujuan, serta pengumpulan SUS dari 15 responden.
+
+## 20 November 2026 — Registrasi dan pemesanan kamar (Tahap 2 proposal)
+
+Calon penghuni mengisi identitas saat memesan kamar melalui situs publik. Admin memeriksa pengajuan melalui Data Pemesanan. Persetujuan menahan kamar, pembatalan melepaskannya, dan aktivasi membuat penyewaan tersendiri melalui layanan penghuni. Profil lama yang sudah diverifikasi dapat digunakan kembali. Dua peran login tetap berlaku.
+
+Migrasi `database/migrasi-registrasi-pemesanan.sql` sudah diterapkan pada MySQL lokal setelah backup privat. Sebelas tabel dan 17 foreign key terdeteksi. Jumlah baris dan sidik data seluruh sembilan tabel lama sama sebelum dan sesudah migrasi. Untuk instalasi lain, pasang migrasi setelah skema dasar. Lihat [panduan registrasi, persetujuan dan aktivasi](registrasi-pemesanan.md).

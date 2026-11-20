@@ -10,13 +10,15 @@
  */
 $fotoKartu = daftar_foto_kamar($kamar)[0] ?? FOTO_PLACEHOLDER;
 $urlDetail       = 'detail-kamar.php?id=' . (int) $kamar['id'];
+$ditahan = $kamar['status'] === 'kosong' && !$kamar['dapat_dipesan'];
+$statusKartu = $ditahan ? 'dipesan' : $kamar['status'];
 $fasilitasUtama  = array_slice($kamar['fasilitas'], 0, 3);
 
 // Kata kunci pencarian (dipakai filter JS di kamar.php), contoh: "kamar 01 kamar 1"
 $nomorTanpaNol   = ltrim((string) $kamar['nomor'], '0');
 $kataKunci       = strtolower('kamar ' . $kamar['nomor'] . ' kamar ' . $nomorTanpaNol);
 ?>
-<article class="card-kamar" data-status="<?= e($kamar['status']) ?>" data-cari="<?= e($kataKunci) ?>">
+<article class="card-kamar" data-status="<?= e($statusKartu) ?>" data-cari="<?= e($kataKunci) ?>">
     <a href="<?= e($urlDetail) ?>" class="card-kamar__foto" tabindex="-1" aria-hidden="true">
         <img src="<?= e($fotoKartu) ?>"
              alt="<?= foto_adalah_ilustrasi($fotoKartu) ? 'Ilustrasi kamar' : 'Foto kamar' ?> <?= e($kamar['nomor']) ?>"
@@ -29,7 +31,7 @@ $kataKunci       = strtolower('kamar ' . $kamar['nomor'] . ' kamar ' . $nomorTan
             <h3 class="card-kamar__judul">
                 <a href="<?= e($urlDetail) ?>">Kamar <?= e($kamar['nomor']) ?></a>
             </h3>
-            <span class="badge badge--<?= e($kamar['status']) ?>"><?= e(label_status($kamar['status'])) ?></span>
+            <span class="badge badge--<?= e($statusKartu) ?>"><?= $ditahan ? 'Dipesan' : e(label_status($statusKartu)) ?></span>
         </div>
 
         <?php if (!empty($fasilitasUtama)): ?>
@@ -45,6 +47,9 @@ $kataKunci       = strtolower('kamar ' . $kamar['nomor'] . ' kamar ' . $nomorTan
                 <?= e(format_rupiah($kamar['harga'])) ?> <span>/ bulan</span>
             </p>
             <a href="<?= e($urlDetail) ?>" class="btn btn-outline btn-block">Detail Kamar</a>
+            <?php if ($halamanAktif === 'kamar' && $kamar['dapat_dipesan']): ?>
+                <a href="pesan-kamar.php?id=<?= (int) $kamar['id'] ?>" class="btn btn-primary btn-block">Pesan Kamar</a>
+            <?php endif; ?>
         </div>
     </div>
 </article>
