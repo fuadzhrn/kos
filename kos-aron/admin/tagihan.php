@@ -71,11 +71,16 @@ $filter = [];
 foreach (['cari', 'bulan', 'tahun', 'status'] as $nama) {
     $filter[$nama] = is_string($_GET[$nama] ?? null) ? trim($_GET[$nama]) : '';
 }
-$daftarTagihan = array_values(array_filter($semua, static function ($t) use ($filter) {
+$dekat = ($_GET['tempo'] ?? '') === 'dekat';
+$hari = tanggal_hari_ini();
+$batasTempo = batas_pengingat_tagihan($hari);
+$daftarTagihan = array_values(array_filter($semua, static function ($t) use ($filter, $dekat, $hari, $batasTempo) {
     return ($filter['cari'] === '' || mb_stripos($t['nama_penghuni'], $filter['cari']) !== false)
         && ($filter['bulan'] === '' || substr($t['periode'], 5) === $filter['bulan'])
         && ($filter['tahun'] === '' || substr($t['periode'], 0, 4) === $filter['tahun'])
-        && ($filter['status'] === '' || $t['status'] === $filter['status']);
+        && ($filter['status'] === '' || $t['status'] === $filter['status']
+            || ($filter['status'] === 'belum_bayar' && $t['status'] === 'terlambat'))
+        && (!$dekat || ($t['status'] !== 'lunas' && $t['jatuh_tempo'] >= $hari && $t['jatuh_tempo'] <= $batasTempo));
 }));
 $modal = in_array($mode, ['baru', 'massal'], true);
 $massal = $mode === 'massal';
@@ -137,6 +142,7 @@ require __DIR__ . '/includes/header.php';
                     <?php endforeach; ?>
                 </select>
             </div>
+            <label><input type="checkbox" name="tempo" value="dekat" <?= $dekat ? 'checked' : '' ?>> Jatuh tempo dalam <?= HARI_PENGINGAT_TAGIHAN ?> hari (termasuk hari ini)</label>
             <button type="submit" class="btn btn-outline">Terapkan</button>
             <a href="tagihan.php" class="btn btn-outline">Reset</a>
             <p class="filter-info">Menampilkan <?= count($daftarTagihan) ?> dari <?= $totalTagihan ?> tagihan</p>

@@ -81,6 +81,7 @@ require __DIR__ . '/includes/header.php';
             <div><dt>Nomor telepon / WhatsApp</dt><dd><?= e($p['nomor_telepon']) ?></dd></div>
             <div><dt>Email</dt><dd><?= e($p['email'] ?: '—') ?></dd></div>
             <div><dt>Nomor kamar</dt><dd><?= e($p['nomor_kamar']) ?></dd></div>
+            <div><dt>Status kamar saat ini</dt><dd><?= e(label_status($p['ketersediaan'])) ?></dd></div>
             <div><dt>Harga kamar per bulan</dt><dd><?= e(format_rupiah($p['harga_kamar'])) ?></dd></div>
             <div><dt>Tanggal pengajuan</dt><dd><?= e(format_tanggal(substr($p['tanggal_pengajuan'], 0, 10))) ?></dd></div>
             <div><dt>Rencana masuk</dt><dd><?= e(format_tanggal($p['rencana_tanggal_masuk'])) ?></dd></div>
@@ -99,7 +100,7 @@ require __DIR__ . '/includes/header.php';
                 <?= csrf_field() ?>
                 <input type="hidden" name="aksi" value="setujui">
                 <p class="form-info">Penyewaan dimulai setelah Anda memproses calon penghuni menjadi penghuni.</p>
-                <button class="btn btn-primary" type="submit">Setujui Pemesanan</button>
+                <button class="btn btn-primary" type="submit" <?= $p['ketersediaan'] === 'kosong' ? '' : 'disabled' ?>>Setujui Pemesanan</button>
             </form>
             <form method="post" id="tolak" data-konfirmasi="Tolak pengajuan ini?">
                 <?= csrf_field() ?>

@@ -107,6 +107,22 @@ function nominal_pembayaran(string $nilai): string
     return $nominal;
 }
 
+/** Dipanggil dalam transaksi yang sudah mengunci tagihan dan memeriksa pembayaran aktif. */
+function catat_pembayaran_baru(PDO $db, int $tagihanId, int $adminId, array $nilai, ?int $pengajuanId = null): int
+{
+    $stmt = $db->prepare('INSERT INTO pembayaran
+        (tanggal_bayar,nominal_dibayar,metode,keterangan,tagihan_id,dicatat_oleh) VALUES (?,?,?,?,?,?)');
+    $stmt->execute([$nilai['tanggal_bayar'],$nilai['nominal_dibayar'],$nilai['metode'],$nilai['keterangan'],$tagihanId,$adminId]);
+    $id = (int)$db->lastInsertId();
+    $sesudah = $nilai + ['id'=>$id,'tagihan_id'=>$tagihanId,'dicatat_oleh'=>$adminId,'status'=>'sah'];
+    $stmt = $db->prepare('INSERT INTO pembayaran_audit (pembayaran_id,pengajuan_id,aksi,admin_id,sesudah) VALUES (?,?,?,?,?)');
+    $stmt->execute([$id,$pengajuanId,$pengajuanId === null ? 'catat' : 'terima',$adminId,json_encode($sesudah, JSON_THROW_ON_ERROR)]);
+    if ($pengajuanId === null) {
+        buat_notifikasi_tagihan($db, tanggal_hari_ini(), $tagihanId);
+    }
+    return $id;
+}
+
 /** Faktur dikunci dahulu untuk semua tindakan. Pembayaran dan jurnal audit ditulis dalam satu transaksi. */
 function proses_pembayaran(string $aksi, int $adminId, array $form): int
 {
@@ -156,18 +172,28 @@ function proses_pembayaran(string $aksi, int $adminId, array $form): int
         if ($aksi === 'simpan' && $lama) {
             throw new DomainException('Pembayaran untuk tagihan ini sudah tercatat. Periksa detail transaksi.');
         }
-        if ($aksi !== 'simpan') {
-            if (!$lama || (string)$lama['id'] !== $form['pembayaran_id']) {
-                throw new DomainException('Pembayaran sudah berubah. Muat ulang detail transaksi.');
+        if ($aksi === 'simpan') {
+            $stmt = $db->prepare('SELECT id FROM pengajuan_pembayaran WHERE tagihan_menunggu_unik=? FOR UPDATE');
+            $stmt->execute([$tagihanId]);
+            if ($stmt->fetchColumn()) {
+                throw new DomainException('Ada bukti transfer yang menunggu verifikasi untuk tagihan ini. Periksa pengajuan tersebut sebelum mencatat pembayaran langsung.');
             }
-            $stmt = $db->prepare('SELECT id FROM pembayaran_audit WHERE pembayaran_id = ? ORDER BY id DESC LIMIT 1 FOR UPDATE');
-            $stmt->execute([$lama['id']]);
-            if ((string)($stmt->fetchColumn() ?: 0) !== $form['versi']) {
-                throw new DomainException('Detail sudah berubah. Muat ulang sebelum melakukan koreksi.');
-            }
+            $id = catat_pembayaran_baru($db, $tagihanId, $adminId, [
+                'tanggal_bayar'=>$form['tanggal_bayar'], 'nominal_dibayar'=>$nominal,
+                'metode'=>$form['metode'], 'keterangan'=>$form['keterangan'] === '' ? null : $form['keterangan'],
+            ]);
+            $db->commit();
+            return $id;
         }
-
-        $baru = $lama ?? ['tagihan_id' => $tagihanId, 'dicatat_oleh' => $adminId, 'status' => 'sah'];
+        if (!$lama || (string)$lama['id'] !== $form['pembayaran_id']) {
+            throw new DomainException('Pembayaran sudah berubah. Muat ulang detail transaksi.');
+        }
+        $stmt = $db->prepare('SELECT id FROM pembayaran_audit WHERE pembayaran_id = ? ORDER BY id DESC LIMIT 1 FOR UPDATE');
+        $stmt->execute([$lama['id']]);
+        if ((string)($stmt->fetchColumn() ?: 0) !== $form['versi']) {
+            throw new DomainException('Detail sudah berubah. Muat ulang sebelum melakukan koreksi.');
+        }
+        $baru = $lama;
         if ($aksi === 'batal') {
             $baru['status'] = 'dibatalkan';
             $id = (int)$lama['id'];
@@ -178,29 +204,18 @@ function proses_pembayaran(string $aksi, int $adminId, array $form): int
             $baru['metode'] = $form['metode'];
             $baru['keterangan'] = $form['keterangan'] === '' ? null : $form['keterangan'];
             $nilai = [$baru['tanggal_bayar'], $nominal, $baru['metode'], $baru['keterangan']];
-            if ($aksi === 'simpan') {
-                $stmt = $db->prepare('INSERT INTO pembayaran (tanggal_bayar, nominal_dibayar, metode, keterangan, tagihan_id, dicatat_oleh)
-                    VALUES (?, ?, ?, ?, ?, ?)');
-                $stmt->execute([...$nilai, $tagihanId, $adminId]);
-                $id = (int)$db->lastInsertId();
-                $baru['id'] = $id;
-            } else {
-                if ($baru === $lama) {
-                    throw new DomainException('Belum ada nilai yang berubah.');
-                }
-                $id = (int)$lama['id'];
-                $db->prepare('UPDATE pembayaran SET tanggal_bayar = ?, nominal_dibayar = ?, metode = ?, keterangan = ? WHERE id = ?')
-                    ->execute([...$nilai, $id]);
+            if ($baru === $lama) {
+                throw new DomainException('Belum ada nilai yang berubah.');
             }
+            $id = (int)$lama['id'];
+            $db->prepare('UPDATE pembayaran SET tanggal_bayar = ?, nominal_dibayar = ?, metode = ?, keterangan = ? WHERE id = ?')
+                ->execute([...$nilai, $id]);
         }
 
         $stmt = $db->prepare('INSERT INTO pembayaran_audit (pembayaran_id, aksi, admin_id, alasan, sebelum, sesudah)
             VALUES (?, ?, ?, ?, ?, ?)');
-        $stmt->execute([$id, $aksi === 'simpan' ? 'catat' : $aksi, $adminId, $aksi === 'simpan' ? null : $alasan,
-            $lama === null ? null : json_encode($lama, JSON_THROW_ON_ERROR), json_encode($baru, JSON_THROW_ON_ERROR)]);
-        if ($aksi === 'simpan') {
-            buat_notifikasi_tagihan($db, date('Y-m-d'), $tagihanId);
-        }
+        $stmt->execute([$id, $aksi, $adminId, $alasan,
+            json_encode($lama, JSON_THROW_ON_ERROR), json_encode($baru, JSON_THROW_ON_ERROR)]);
         $db->commit();
         return $id;
     } catch (Throwable $e) {

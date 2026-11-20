@@ -1,13 +1,14 @@
 <?php
 require_once __DIR__ . '/includes/konteks.php';
-require_once __DIR__ . '/../data/tagihan.php'; // juga memuat data penghuni, kamar & pembayaran
+require_once __DIR__ . '/../data/pengajuan-pembayaran.php';
 
 $judulHalaman = 'Dashboard Penghuni';
 $menuAktif    = 'dashboard';
 
 require_once __DIR__ . '/../data/notifikasi.php';
 
-$tagihanBerjalan = $penghuniLogin ? get_tagihan_berjalan($penghuniLogin['id']) : null;
+$tagihanBerjalan = $penghuniLogin ? get_tagihan_berjalan($penghuniLogin['id'], true) : null;
+$ringkasan = $penghuniLogin ? ringkasan_tagihan_periode(null, null, $penghuniLogin['id']) : null;
 $riwayatTerbaru  = $penghuniLogin ? get_pembayaran_by_penghuni($penghuniLogin['id'], 3) : [];
 
 $notifikasi = $penghuniLogin ? get_notifikasi_penghuni($penghuniLogin['id'], 1) : [];
@@ -16,7 +17,7 @@ require __DIR__ . '/includes/header.php';
 
 <div class="admin-page-head">
     <h1>Dashboard Penghuni</h1>
-    <p>Informasi kamar dan pembayaran sewa Kos Aron.</p>
+    <p>Informasi kamar dan pembayaran sewa <?= e(SITE_NAME) ?>.</p>
 </div>
 
 <?php if ($penghuniLogin === null): ?>
@@ -47,8 +48,8 @@ require __DIR__ . '/includes/header.php';
                 <dd><?= $penghuniLogin['kamar_id'] ? e(format_rupiah($penghuniLogin['harga_sewa_disepakati'])) . ' / bulan' : '-' ?></dd>
             </div>
             <div>
-                <dt>Tanggal Jatuh Tempo</dt>
-                <dd><?= $tagihanBerjalan ? e(format_tanggal($tagihanBerjalan['jatuh_tempo'])) : '-' ?></dd>
+                <dt>Total tagihan belum lunas</dt>
+                <dd><?= e(format_rupiah($ringkasan['belum_lunas_total'])) ?> · <?= (int)$ringkasan['belum_lunas_jumlah'] ?> tagihan</dd>
             </div>
         </dl>
     </section>
@@ -60,7 +61,7 @@ require __DIR__ . '/includes/header.php';
             <a href="tagihan.php" class="link-more">Lihat semua tagihan <span aria-hidden="true">&rarr;</span></a>
         </div>
         <?php if ($tagihanBerjalan === null): ?>
-            <p class="panel__kosong">Belum ada tagihan untuk bulan ini.</p>
+            <p class="panel__kosong">Belum ada tagihan untuk Anda.</p>
         <?php else: ?>
             <dl class="info-tabel info-tabel--panel">
                 <div>
@@ -84,11 +85,24 @@ require __DIR__ . '/includes/header.php';
                         <?php endif; ?>
                     </dd>
                 </div>
+                <?php if ($tagihanBerjalan['status_pengajuan'] !== null): ?>
+                    <div><dt>Pengajuan transfer terakhir</dt><dd><?= e(label_status_pengajuan($tagihanBerjalan['status_pengajuan'])) ?>
+                        <?php if ($tagihanBerjalan['status_pengajuan'] === 'ditolak' && $tagihanBerjalan['alasan_pengajuan'] !== null): ?>
+                            <span class="tabel__sub"><?= e($tagihanBerjalan['alasan_pengajuan']) ?></span>
+                        <?php endif; ?></dd></div>
+                <?php endif; ?>
             </dl>
             <?php if ($tagihanBerjalan['status'] !== 'lunas'): ?>
                 <p class="notice mt-section">
-                    Pembayaran dilakukan tunai atau transfer langsung kepada pemilik, di luar website.
-                    Status akan berubah menjadi Lunas setelah admin mencatat pembayaran Anda.
+                    <?php if ($tagihanBerjalan['status_pengajuan'] === 'menunggu'): ?>
+                        Bukti transfer sedang diperiksa Admin.
+                    <?php elseif ($tagihanBerjalan['pembayaran_sah_id'] === null && $tagihanBerjalan['jumlah'] !== '0.00'): ?>
+                        <?php if ($tagihanBerjalan['status'] === 'terlambat'): ?>Tagihan telah melewati jatuh tempo.<?php endif; ?>
+                        <a href="tagihan.php?ajukan=<?= (int)$tagihanBerjalan['id'] ?>#pengajuan"><?= $tagihanBerjalan['status_pengajuan'] === 'ditolak' ? 'Ajukan Ulang Pembayaran' : 'Ajukan Pembayaran' ?></a>
+                        atau hubungi pemilik untuk pembayaran langsung.
+                    <?php else: ?>
+                        Hubungi pemilik untuk informasi tagihan ini.
+                    <?php endif; ?>
                 </p>
             <?php endif; ?>
         <?php endif; ?>
@@ -131,7 +145,7 @@ require __DIR__ . '/includes/header.php';
     <!-- 5. Notifikasi -->
     <section class="panel">
         <div class="panel__head">
-            <h2>Notifikasi (<?= jumlah_notifikasi_belum_dibaca($penghuniLogin['id']) ?> belum dibaca)</h2>
+            <h2>Notifikasi (<?= $belumDibaca ?> belum dibaca)</h2>
             <a href="notifikasi.php" class="link-more">Lihat semua notifikasi <span aria-hidden="true">&rarr;</span></a>
         </div>
         <?php if ($notifikasi): ?>

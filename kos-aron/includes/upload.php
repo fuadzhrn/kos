@@ -24,6 +24,16 @@ const MIME_FOTO_DIIZINKAN = [
     'image/webp' => 'webp',
 ];
 
+function mime_gambar_unggahan(string $path): ?string
+{
+    $mime = (new finfo(FILEINFO_MIME_TYPE))->file($path);
+    if (!$mime || !isset(MIME_FOTO_DIIZINKAN[$mime])) {
+        return null;
+    }
+    $info = @getimagesize($path);
+    return $info && $info['mime'] === $mime ? $mime : null;
+}
+
 /**
  * Memproses satu file yang diunggah (dari $_FILES['...']).
  *
@@ -51,17 +61,9 @@ function simpan_foto_upload(array $file, string $folderRelatif): array
         return ['berhasil' => false, 'ada_file' => true, 'nama_file' => null, 'pesan' => 'Ukuran foto maksimal 2 MB.'];
     }
 
-    $finfo    = new finfo(FILEINFO_MIME_TYPE);
-    $mimeAsli = $finfo->file($file['tmp_name']);
-
-    if ($mimeAsli === false || !isset(MIME_FOTO_DIIZINKAN[$mimeAsli])) {
-        return ['berhasil' => false, 'ada_file' => true, 'nama_file' => null, 'pesan' => 'Format foto harus JPG, PNG, atau WebP.'];
-    }
-
-    // Pemeriksaan tambahan: pastikan ini benar-benar gambar yang bisa didekode,
-    // bukan sekadar file dengan "magic bytes" gambar (mis. polyglot file).
-    if (@getimagesize($file['tmp_name']) === false) {
-        return ['berhasil' => false, 'ada_file' => true, 'nama_file' => null, 'pesan' => 'Berkas bukan gambar yang valid.'];
+    $mimeAsli = mime_gambar_unggahan($file['tmp_name']);
+    if ($mimeAsli === null) {
+        return ['berhasil' => false, 'ada_file' => true, 'nama_file' => null, 'pesan' => 'Format foto harus berupa gambar JPG, PNG, atau WebP yang valid.'];
     }
 
     $ekstensi     = MIME_FOTO_DIIZINKAN[$mimeAsli];

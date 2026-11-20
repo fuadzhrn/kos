@@ -32,6 +32,8 @@ credentials*.json
 !/kos-aron/database/migrasi-07-pembayaran.sql
 !/kos-aron/database/migrasi-09-notifikasi.sql
 !/kos-aron/database/migrasi-registrasi-pemesanan.sql
+!/kos-aron/database/migrasi-pengajuan-pembayaran.sql
+!/kos-aron/database/migrasi-verifikasi-pembayaran.sql
 # database/seed.sql: data uji FIKTIF (lihat isi file), bukan dump
 # data penghuni sungguhan -- aman dan memang dimaksudkan untuk di-commit.
 !**/seed.sql

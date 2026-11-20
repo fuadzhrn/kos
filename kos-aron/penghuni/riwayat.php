@@ -1,11 +1,13 @@
 <?php
 require_once __DIR__ . '/includes/konteks.php';
-require_once __DIR__ . '/../data/tagihan.php'; // juga memuat data penghuni, kamar & pembayaran
+require_once __DIR__ . '/../data/pengajuan-pembayaran.php'; // juga memuat data penghuni, kamar & pembayaran
 
 $judulHalaman = 'Riwayat Pembayaran';
 $menuAktif    = 'riwayat';
 
 
+$untukAdmin = false;
+$pengajuanTransfer = $penghuniLogin ? daftar_pengajuan_transfer($penghuniLogin['id']) : [];
 $riwayatPembayaran = $penghuniLogin ? get_pembayaran_by_penghuni($penghuniLogin['id']) : [];
 
 // Pilihan filter Bulan & Tahun diambil dari data riwayat itu sendiri (tidak hardcode).
@@ -31,7 +33,7 @@ require __DIR__ . '/includes/header.php';
 
 <div class="admin-page-head">
     <h1>Riwayat Pembayaran</h1>
-    <p>Seluruh riwayat pembayaran sewa yang telah dicatat admin.</p>
+    <p>Pembayaran sewa yang sudah dicatat Admin dan riwayat pengajuan bukti transfer Anda.</p>
 </div>
 
 <?php if ($penghuniLogin === null): ?>
@@ -127,6 +129,10 @@ require __DIR__ . '/includes/header.php';
         <?php endif; ?>
     </section>
 
+<?php endif; ?>
+
+<?php if ($penghuniLogin): ?>
+    <?php require __DIR__ . '/../includes/daftar-pengajuan-transfer.php'; ?>
 <?php endif; ?>
 
 <!-- Modal Detail Pembayaran (hanya tampilan, sama seperti admin/pembayaran.php) -->

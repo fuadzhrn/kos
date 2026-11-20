@@ -46,14 +46,14 @@ require __DIR__ . '/includes/header.php';
                 <?php foreach ($daftar as $i => $p): ?>
                     <tr>
                         <td><?= $i + 1 ?></td><td><?= e($p['kode_pemesanan']) ?></td><td><?= e($p['nama_lengkap']) ?></td>
-                        <td><?= e($p['nomor_kamar']) ?></td><td><?= e(format_tanggal(substr($p['tanggal_pengajuan'], 0, 10))) ?></td>
+                        <td><?= e($p['nomor_kamar']) ?><span class="tabel__sub"><?= e(label_status($p['ketersediaan'])) ?></span></td><td><?= e(format_tanggal(substr($p['tanggal_pengajuan'], 0, 10))) ?></td>
                         <td><?= e(format_tanggal($p['rencana_tanggal_masuk'])) ?></td><td><?= e(ucfirst($p['status'])) ?>
                             <?php if ($p['penyewaan_id']): ?><span class="tabel__sub">Sudah diproses menjadi penghuni</span><?php endif; ?>
                         </td>
                         <td><div class="aksi-grup">
                             <a class="btn btn-outline btn-sm" href="pemesanan-detail.php?id=<?= (int)$p['id'] ?>">Detail</a>
                             <?php if ($p['status'] === 'menunggu'): ?>
-                                <a class="btn btn-outline btn-sm" href="pemesanan-detail.php?id=<?= (int)$p['id'] ?>#setujui">Setujui</a>
+                                <?php if ($p['ketersediaan'] === 'kosong'): ?><a class="btn btn-outline btn-sm" href="pemesanan-detail.php?id=<?= (int)$p['id'] ?>#setujui">Setujui</a><?php endif; ?>
                                 <a class="btn btn-outline btn-sm" href="pemesanan-detail.php?id=<?= (int)$p['id'] ?>#tolak">Tolak</a>
                             <?php endif; ?>
                         </div></td>

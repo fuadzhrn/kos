@@ -137,8 +137,8 @@ function label_status_tagihan(string $status): string
 {
     return match ($status) {
         'lunas'     => 'Lunas',
-        'terlambat' => 'Terlambat',
-        default     => 'Belum Bayar',
+        'terlambat' => 'Belum Lunas · Terlambat',
+        default     => 'Belum Lunas',
     };
 }
 
@@ -160,7 +160,10 @@ function label_metode_pembayaran(string $metode): string
 /** Label status kamar untuk ditampilkan. */
 function label_status(string $status): string
 {
-    return $status === 'kosong' ? 'Tersedia' : 'Terisi';
+    return match ($status) {
+        'kosong' => 'Tersedia', 'terisi' => 'Terisi', 'dipesan' => 'Dipesan', 'perawatan' => 'Perawatan',
+        default => 'Tidak tersedia',
+    };
 }
 
 /**

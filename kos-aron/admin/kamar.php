@@ -72,7 +72,9 @@ require __DIR__ . '/includes/header.php';
                 <label for="status-kamar">Status</label>
                 <select id="status-kamar" name="status" class="form-control">
                     <option value="semua">Semua</option>
-                    <option value="kosong">Kosong</option>
+                    <option value="kosong">Tersedia</option>
+                    <option value="dipesan">Dipesan</option>
+                    <option value="perawatan">Perawatan</option>
                     <option value="terisi">Terisi</option>
                 </select>
             </div>
@@ -103,7 +105,7 @@ require __DIR__ . '/includes/header.php';
                         $fotoTabel = daftar_foto_kamar($kamar)[0] ?? FOTO_PLACEHOLDER;
                         $kataKunci = strtolower($nama . ' kamar ' . ltrim((string) $kamar['nomor'], '0'));
                         ?>
-                        <tr data-baris data-status="<?= e($kamar['status']) ?>" data-cari="<?= e($kataKunci) ?>">
+                        <tr data-baris data-status="<?= e($kamar['ketersediaan']) ?>" data-cari="<?= e($kataKunci) ?>">
                             <td class="tabel__no"><?= $i + 1 ?></td>
                             <td>
                                 <img class="tabel__foto" src="../<?= e($fotoTabel) ?>"
@@ -114,7 +116,7 @@ require __DIR__ . '/includes/header.php';
                             <td class="tabel__angka"><?= e(format_rupiah($kamar['harga'])) ?></td>
                             <td class="tabel__fasilitas"><?= e(implode(', ', $kamar['fasilitas'])) ?></td>
                             <td>
-                                <span class="badge badge--<?= e($kamar['status']) ?>"><?= e(ucfirst($kamar['status'])) ?></span>
+                                <span class="badge badge--<?= e($kamar['ketersediaan']) ?>"><?= e(label_status($kamar['ketersediaan'])) ?></span>
                             </td>
                             <td>
                                 <span class="badge badge--<?= e($kamar['kondisi']) ?>"><?= e($kamar['kondisi'] === 'perawatan' ? 'Perawatan' : 'Aktif') ?></span>

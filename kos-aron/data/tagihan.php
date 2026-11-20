@@ -3,9 +3,12 @@ require_once __DIR__ . '/penghuni.php';
 
 const SQL_RIWAYAT_TAGIHAN = 'SELECT t.*, s.penghuni_id, p.nama AS nama_penghuni, k.nomor AS nomor_kamar,
     CASE WHEN pb.nominal_dibayar = t.jumlah THEN pb.tanggal_bayar END AS tanggal_bayar,
+    a.id AS pengajuan_id, a.status_verifikasi AS status_pengajuan, a.catatan_admin AS alasan_pengajuan,
     pb.id AS pembayaran_sah_id FROM tagihan t JOIN penyewaan s ON s.id = t.penyewaan_id
     JOIN penghuni p ON p.id = s.penghuni_id JOIN kamar k ON k.id = s.kamar_id
-    LEFT JOIN pembayaran pb ON pb.tagihan_aktif_unik = t.id';
+    LEFT JOIN pembayaran pb ON pb.tagihan_aktif_unik = t.id
+    LEFT JOIN pengajuan_pembayaran a ON a.id=(SELECT us.id FROM pengajuan_pembayaran us
+        WHERE us.tagihan_id=t.id AND us.penghuni_id=s.penghuni_id ORDER BY us.id DESC LIMIT 1)';
 
 function data_tagihan(): array
 {
@@ -32,9 +35,17 @@ function get_semua_tagihan(): array
 }
 
 /** Tagihan terbaru (untuk dashboard). */
-function get_tagihan_terbaru(int $batas): array
+function get_tagihan_terbaru(int $batas, ?string $periode = null): array
 {
-    return array_slice(get_semua_tagihan(), 0, $batas);
+    $sql = SQL_RIWAYAT_TAGIHAN . ($periode === null ? '' : ' WHERE t.periode=?')
+        . ' ORDER BY t.periode DESC,t.id DESC LIMIT ?';
+    $stmt = koneksi_database()->prepare($sql);
+    if ($periode !== null) {
+        $stmt->bindValue(1, $periode);
+    }
+    $stmt->bindValue($periode === null ? 1 : 2, $batas, PDO::PARAM_INT);
+    $stmt->execute();
+    return array_map('lengkapi_tagihan', $stmt->fetchAll());
 }
 
 /** Satu tagihan (sudah dilengkapi) berdasarkan id, atau null. */
@@ -55,10 +66,21 @@ function get_tagihan_by_penghuni(int $penghuniId): array
 }
 
 /** Tagihan sewa aktif pada bulan kalender berjalan (WIB). */
-function get_tagihan_berjalan(int $penghuniId): ?array
+function get_tagihan_berjalan(int $penghuniId, bool $sertakanTerbaru = false): ?array
 {
-    $stmt = koneksi_database()->prepare(SQL_RIWAYAT_TAGIHAN . " WHERE s.penghuni_id = ? AND s.status = 'aktif' AND t.periode = ?");
-    $stmt->execute([$penghuniId, substr(tanggal_hari_ini(), 0, 7)]);
+    $periode = substr(tanggal_hari_ini(), 0, 7);
+    $sql = SQL_RIWAYAT_TAGIHAN . ' WHERE s.penghuni_id = ?';
+    $params = [$penghuniId,$periode];
+    if ($sertakanTerbaru) {
+        $sql .= " ORDER BY (s.status='aktif' AND t.periode=?) DESC,
+            (pb.id IS NULL AND t.periode<=?) DESC, (t.periode<=?) DESC,
+            CASE WHEN t.periode>? THEN t.periode END ASC, t.periode DESC,t.id DESC LIMIT 1";
+        array_push($params, $periode, $periode, $periode);
+    } else {
+        $sql .= " AND s.status='aktif' AND t.periode=? LIMIT 1";
+    }
+    $stmt = koneksi_database()->prepare($sql);
+    $stmt->execute($params);
     $baris = $stmt->fetch();
     return $baris ? lengkapi_tagihan($baris) : null;
 }
@@ -75,9 +97,7 @@ function get_tagihan_belum_lunas(): array
 /** Daftar periode yang memiliki tagihan, terbaru di atas (untuk filter). */
 function daftar_periode_tagihan(): array
 {
-    $periode = array_unique(array_column(data_tagihan(), 'periode'));
-    rsort($periode);
-    return $periode;
+    return koneksi_database()->query('SELECT DISTINCT periode FROM tagihan ORDER BY periode DESC')->fetchAll(PDO::FETCH_COLUMN);
 }
 
 /** Satu periode kalender MySQL, misalnya 2026-11. */
@@ -180,49 +200,37 @@ function konfirmasi_tagihan(array $pratinjau, int $adminId): array
     return $hasil;
 }
 
-/**
- * Ringkasan tagihan untuk satu periode tertentu (dipakai di Laporan Admin).
- * $periode = null berarti semua periode.
- *
- * @return array{jumlah: int, total: int, belum_lunas_jumlah: int, belum_lunas_total: int}
- */
-function ringkasan_tagihan_periode(?string $periode = null): array
+/** Semua faktur pada periode tagihan, termasuk riwayat sewa selesai. Ikatan unik mencegah penghitungan ganda. */
+function ringkasan_tagihan_periode(?string $periode = null, ?string $akhir = null, ?int $penghuniId = null): array
 {
-    $hasil = ['jumlah' => 0, 'total' => 0, 'belum_lunas_jumlah' => 0, 'belum_lunas_total' => 0];
-    foreach (get_semua_tagihan() as $tagihan) {
-        if ($periode !== null && $tagihan['periode'] !== $periode) {
-            continue;
-        }
-        $hasil['jumlah']++;
-        $hasil['total'] += $tagihan['jumlah'];
-        if ($tagihan['status'] !== 'lunas') {
-            $hasil['belum_lunas_jumlah']++;
-            $hasil['belum_lunas_total'] += $tagihan['jumlah'];
-        }
+    $sql = "SELECT COUNT(*) jumlah, COUNT(CASE WHEN s.status='aktif' THEN 1 END) jumlah_aktif,
+        COALESCE(SUM(t.jumlah),0) total, COUNT(pb.id) jumlah_bayar, COALESCE(SUM(pb.nominal_dibayar),0) total_bayar,
+        COUNT(*)-COUNT(pb.id) belum_lunas_jumlah, COALESCE(SUM(IF(pb.id IS NULL,t.jumlah,0)),0) belum_lunas_total,
+        COUNT(CASE WHEN pb.id IS NULL AND t.jatuh_tempo < ? THEN 1 END) terlambat,
+        COUNT(CASE WHEN pb.id IS NULL AND t.jatuh_tempo BETWEEN ? AND ? THEN 1 END) dekat,
+        COUNT(a.id) menunggu
+        FROM tagihan t JOIN penyewaan s ON s.id=t.penyewaan_id
+        LEFT JOIN pembayaran pb ON pb.tagihan_aktif_unik=t.id AND pb.nominal_dibayar=t.jumlah
+        LEFT JOIN pengajuan_pembayaran a ON a.tagihan_menunggu_unik=t.id WHERE 1=1";
+    $hari = tanggal_hari_ini();
+    $params = [$hari,$hari,batas_pengingat_tagihan($hari)];
+    if ($periode !== null) {
+        $sql .= ' AND t.periode BETWEEN ? AND ?';
+        array_push($params, $periode, $akhir ?? $periode);
     }
-    return $hasil;
+    if ($penghuniId !== null) {
+        $sql .= ' AND s.penghuni_id=?';
+        $params[] = $penghuniId;
+    }
+    $stmt = koneksi_database()->prepare($sql);
+    $stmt->execute($params);
+    return $stmt->fetch();
 }
 
-/**
- * Ringkasan tagihan yang belum lunas (belum bayar + terlambat).
- *
- * @return array{jumlah: int, total: int, terlambat: int}
- */
 function ringkasan_tagihan_belum_lunas(): array
 {
-    $hasil = ['jumlah' => 0, 'total' => 0, 'terlambat' => 0];
-    foreach (data_tagihan() as $tagihan) {
-        $status = status_tagihan($tagihan);
-        if ($status === 'lunas') {
-            continue;
-        }
-        $hasil['jumlah']++;
-        $hasil['total'] += $tagihan['jumlah'];
-        if ($status === 'terlambat') {
-            $hasil['terlambat']++;
-        }
-    }
-    return $hasil;
+    $hasil = ringkasan_tagihan_periode();
+    return ['jumlah'=>$hasil['belum_lunas_jumlah'], 'total'=>$hasil['belum_lunas_total'], 'terlambat'=>$hasil['terlambat']];
 }
 
 require_once __DIR__ . '/pembayaran.php';

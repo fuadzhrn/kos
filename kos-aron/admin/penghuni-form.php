@@ -135,7 +135,7 @@ require __DIR__ . '/includes/header.php';
                         <?php foreach (get_semua_kamar() as $k): ?>
                             <option value="<?= (int)$k['id'] ?>" <?= !$k['dapat_dipesan'] ? 'disabled' : '' ?>
                                 <?= $nilai['kamar_id'] === (string)$k['id'] ? 'selected' : '' ?>>
-                                Kamar <?= e($k['nomor']) ?> (<?= e($k['dapat_dipesan'] || $k['status'] === 'terisi' ? label_status($k['status']) : 'Tidak tersedia untuk sewa') ?>)
+                                Kamar <?= e($k['nomor']) ?> (<?= e(label_status($k['ketersediaan'])) ?>)
                             </option>
                         <?php endforeach; ?>
                     </select>

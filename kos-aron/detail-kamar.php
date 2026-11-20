@@ -19,8 +19,8 @@ if ($kamar !== null) {
                    . format_rupiah($kamar['harga']) . ' per bulan.';
 
     $tersedia   = $kamar['dapat_dipesan'];
-    $ditahan    = !$tersedia && $kamar['status'] === 'kosong';
-    $labelStatus = $ditahan ? 'Dipesan' : label_status($kamar['status']);
+    $ditahan    = $kamar['ketersediaan'] === 'dipesan';
+    $labelStatus = label_status($kamar['ketersediaan']);
     $daftarFoto = daftar_foto_kamar($kamar);
     $fotoUtama  = $daftarFoto[0] ?? FOTO_PLACEHOLDER;
 
@@ -82,7 +82,7 @@ require __DIR__ . '/includes/header.php';
                 <div class="detail-kamar__info">
                     <div class="detail-kamar__head">
                         <h1><?= e($namaKamar) ?></h1>
-                        <span class="badge badge--<?= $ditahan ? 'dipesan' : e($kamar['status']) ?>"><?= e($labelStatus) ?></span>
+                        <span class="badge badge--<?= e($kamar['ketersediaan']) ?>"><?= e($labelStatus) ?></span>
                     </div>
 
                     <p class="detail-kamar__harga">
@@ -131,7 +131,7 @@ require __DIR__ . '/includes/header.php';
                     </div>
                     <div>
                         <dt>Status</dt>
-                        <dd><span class="badge badge--<?= $ditahan ? 'dipesan' : e($kamar['status']) ?>"><?= e($labelStatus) ?></span></dd>
+                        <dd><span class="badge badge--<?= e($kamar['ketersediaan']) ?>"><?= e($labelStatus) ?></span></dd>
                     </div>
                     <div>
                         <dt>Fasilitas</dt>

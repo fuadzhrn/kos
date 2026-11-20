@@ -105,7 +105,7 @@ function ajukan_pemesanan(int $kamarId, array $form): string
 }
 
 const SQL_RINCI_PEMESANAN = 'SELECT p.*, c.nama_lengkap, c.nomor_telepon, c.email,
-    k.nomor AS nomor_kamar, k.harga AS harga_kamar
+    k.nomor AS nomor_kamar, k.harga AS harga_kamar, ' . SQL_KETERSEDIAAN_KAMAR . ' AS ketersediaan
     FROM pemesanan p JOIN calon_penghuni c ON c.id=p.calon_penghuni_id JOIN kamar k ON k.id=p.kamar_id';
 
 function daftar_pemesanan(string $status = '', string $cari = ''): array

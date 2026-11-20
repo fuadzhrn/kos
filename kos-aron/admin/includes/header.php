@@ -41,7 +41,7 @@ $menuAdmin = [
 <div class="admin-layout">
     <aside id="sidebar" class="sidebar" aria-label="Menu admin">
         <div class="sidebar__brand">
-            <a href="index.php">KOS ARON</a>
+            <a href="index.php"><?= e(mb_strtoupper(SITE_NAME)) ?></a>
             <span>Admin</span>
         </div>
         <nav class="sidebar__nav">

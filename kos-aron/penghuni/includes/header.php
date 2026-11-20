@@ -15,6 +15,8 @@ $judulHalaman  = $judulHalaman ?? 'Dashboard';
 $menuAktif     = $menuAktif ?? '';
 $namaPenghuni  = pengguna_login()['nama'] ?? ($penghuniLogin['nama'] ?? 'Penghuni');
 
+require_once __DIR__ . '/../../data/notifikasi.php';
+$belumDibaca = $penghuniLogin ? jumlah_notifikasi_belum_dibaca($penghuniLogin['id']) : 0;
 $menuPenghuni = [
     'dashboard'  => ['Dashboard',          'index.php'],
     'kamar'      => ['Kamar Saya',         'kamar.php'],
@@ -43,14 +45,14 @@ $menuPenghuni = [
 <div class="admin-layout">
     <aside id="sidebar" class="sidebar" aria-label="Menu penghuni">
         <div class="sidebar__brand">
-            <a href="index.php">KOS ARON</a>
+            <a href="index.php"><?= e(mb_strtoupper(SITE_NAME)) ?></a>
             <span>Penghuni</span>
         </div>
         <nav class="sidebar__nav">
             <ul>
                 <?php foreach ($menuPenghuni as $kunci => [$label, $url]): ?>
                     <li>
-                        <a href="<?= e($url) ?>"<?= $kunci === $menuAktif ? ' class="is-active" aria-current="page"' : '' ?>><?= e($label) ?></a>
+                        <a href="<?= e($url) ?>"<?= $kunci === $menuAktif ? ' class="is-active" aria-current="page"' : '' ?>><?= e($label) ?><?php if ($kunci === 'notifikasi' && $belumDibaca): ?> <span class="badge badge--belum-dibaca" aria-label="<?= $belumDibaca ?> belum dibaca"><?= $belumDibaca ?></span><?php endif; ?></a>
                     </li>
                 <?php endforeach; ?>
             </ul>

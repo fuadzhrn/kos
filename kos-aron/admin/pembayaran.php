@@ -1,7 +1,7 @@
 <?php
 require_once __DIR__ . '/../includes/config.php';
 $admin = require_role('admin', '../login.php');
-require_once __DIR__ . '/../data/tagihan.php';
+require_once __DIR__ . '/../data/pengajuan-pembayaran.php';
 
 $judulHalaman = 'Data Pembayaran';
 $menuAktif = 'pembayaran';
@@ -51,9 +51,15 @@ $formId = bin2hex(random_bytes(16));
 $_SESSION['form_bayar'][$formId] = true;
 $_SESSION['form_bayar'] = array_slice($_SESSION['form_bayar'], -20, null, true);
 
+$statusPengajuan = in_array($_GET['status_pengajuan'] ?? '', ['menunggu','disetujui','ditolak'], true) ? $_GET['status_pengajuan'] : '';
+$cariPengajuan = is_string($_GET['cari_pengajuan'] ?? null) ? mb_substr(trim($_GET['cari_pengajuan']), 0, 100) : '';
+$daftarPeriode = daftar_periode_tagihan();
+$periodePengajuan = in_array($_GET['periode_pengajuan'] ?? '', $daftarPeriode, true) ? $_GET['periode_pengajuan'] : null;
+$pengajuanTransfer = daftar_pengajuan_transfer(null, $statusPengajuan, $cariPengajuan, $periodePengajuan);
+$untukAdmin = true;
 $daftarPembayaran = get_semua_pembayaran(true);
 $totalPembayaran = count($daftarPembayaran);
-$daftarPeriode = daftar_periode_tagihan();
+
 $daftarMetode = daftar_metode_pembayaran();
 $ringkasanBulan = ringkasan_pembayaran_bulan_ini();
 $tagihanBelumLunas = array_filter(get_tagihan_belum_lunas(),
@@ -69,13 +75,15 @@ require __DIR__ . '/includes/header.php';
 <div class="admin-page-head admin-page-head--aksi">
     <div>
         <h1>Data Pembayaran</h1>
-        <p>Catat pembayaran sewa yang diterima pemilik secara tunai atau transfer, dan lihat riwayatnya.</p>
+        <p>Periksa bukti transfer penghuni, catat pembayaran langsung, dan lihat riwayat transaksi.</p>
     </div>
     <a href="pembayaran.php?form=baru#modal-pembayaran" class="btn btn-primary" data-buka-pembayaran>Catat Pembayaran</a>
 </div>
 
 <?php if ($pesan && !$detailBuka): ?><p class="notice" role="status"><?= e($pesan) ?></p><?php endif; ?>
 <?php if ($galat && !$modalBuka && !$detailBuka): ?><p class="notice notice--galat" role="alert"><?= e($galat[0]) ?></p><?php endif; ?>
+
+<?php require __DIR__ . '/../includes/daftar-pengajuan-transfer.php'; ?>
 
 <div class="ringkasan-bulan">
     <div class="stat-card">
@@ -365,5 +373,6 @@ require __DIR__ . '/includes/header.php';
         <a href="pembayaran.php" class="btn btn-outline" data-tutup-modal>Tutup</a>
     </div>
 </dialog>
+
 
 <?php require __DIR__ . '/includes/footer.php'; ?>

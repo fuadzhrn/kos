@@ -31,7 +31,7 @@ $tampilkanPembayaran = $jenisDipilih !== 'kamar';
 $tampilkanKamar       = $jenisDipilih !== 'pembayaran';
 
 [$ringkasanTagihan, $daftarPembayaranLaporan, $daftarKamarLaporan] = data_laporan($awal, $akhir, $tanggalKamar);
-$statKamar = $daftarKamarLaporan[0] ?? ['terisi' => 0, 'kosong' => 0, 'total' => 0];
+$statKamar = $daftarKamarLaporan[0] ?? ['terisi' => 0, 'kosong' => 0, 'total' => 0, 'dipesan' => 0, 'perawatan' => 0];
 
 require __DIR__ . '/includes/header.php';
 ?>
@@ -90,7 +90,9 @@ require __DIR__ . '/includes/header.php';
     <div class="stat-card">
         <p class="stat-card__label">Kamar Terisi</p>
         <p class="stat-card__nilai"><?= $statKamar['terisi'] ?></p>
-        <p class="stat-card__ket"><?= $statKamar['kosong'] ?> kosong · <?= $statKamar['total'] ?> kamar</p>
+        <p class="stat-card__ket"><?= $statKamar['kosong'] ?> <?= $tanggalKamar === tanggal_hari_ini() ? 'tersedia' : 'kosong' ?>
+            <?php if ($tanggalKamar === tanggal_hari_ini()): ?> · <?= $statKamar['dipesan'] ?> dipesan · <?= $statKamar['perawatan'] ?> perawatan<?php endif; ?>
+            · <?= $statKamar['total'] ?> kamar</p>
     </div>
 </section>
 
@@ -165,7 +167,7 @@ require __DIR__ . '/includes/header.php';
                             <td class="tabel__no" data-label="No"><?= $i + 1 ?></td>
                             <td class="tabel__utama" data-label="Nomor Kamar">Kamar <?= e($k['nomor']) ?></td>
                             <td class="tabel__angka" data-label="Harga Sewa"><?= e(format_rupiah($k['harga'])) ?></td>
-                            <td data-label="Status"><span class="badge badge--<?= e($k['status']) ?>"><?= e(ucfirst($k['status'])) ?></span></td>
+                            <td data-label="Status"><span class="badge badge--<?= e($k['status']) ?>"><?= e($tanggalKamar === tanggal_hari_ini() ? label_status($k['status']) : ucfirst($k['status'])) ?></span></td>
                             <td data-label="Penghuni"><?= e($k['nama'] ?? '-') ?></td>
                         </tr>
                     <?php endforeach; ?>

@@ -27,12 +27,12 @@
 
 require_once __DIR__ . '/../includes/koneksi.php';
 
-/** Klausa SQL yang menghitung status ketersediaan dari tabel penyewaan. */
-const SQL_STATUS_KAMAR = "IF(EXISTS(
-        SELECT 1 FROM penyewaan s WHERE s.kamar_id = k.id AND s.status = 'aktif'
-    ), 'terisi', 'kosong')";
-
-const SQL_KAMAR_DITAHAN = 'EXISTS (SELECT 1 FROM pemesanan b WHERE b.kamar_ditahan_unik = k.id)';
+/** Status penawaran saat ini. Riwayat hunian tetap berasal dari penyewaan. */
+const SQL_KETERSEDIAAN_KAMAR = "CASE
+    WHEN EXISTS (SELECT 1 FROM penyewaan sewa WHERE sewa.kamar_aktif_unik=k.id) THEN 'terisi'
+    WHEN k.kondisi='perawatan' THEN 'perawatan'
+    WHEN EXISTS (SELECT 1 FROM pemesanan pesan WHERE pesan.kamar_ditahan_unik=k.id) THEN 'dipesan'
+    ELSE 'kosong' END";
 
 /** Dibaca sesudah baris kamar dikunci oleh transaksi yang mengubah ketersediaan. */
 function pemesanan_penahan_kamar(PDO $db, int $kamarId): ?int
@@ -43,7 +43,7 @@ function pemesanan_penahan_kamar(PDO $db, int $kamarId): ?int
     return $id === false ? null : (int)$id;
 }
 
-/** Mengubah satu baris hasil query (k.* + alias status_terhitung) menjadi array kamar. */
+/** Status hunian dan status penawaran dibaca dari hasil query kamar yang sama. */
 function baris_kamar_ke_array(array $baris): array
 {
     return [
@@ -55,8 +55,10 @@ function baris_kamar_ke_array(array $baris): array
         'foto'      => $baris['foto_utama'],
         'galeri'    => json_decode($baris['galeri'] ?? '[]', true) ?: [],
         'kondisi'   => $baris['kondisi'],
-        'status'    => $baris['status_terhitung'],
-        'dapat_dipesan' => $baris['kondisi'] === 'aktif' && $baris['status_terhitung'] === 'kosong' && empty($baris['ditahan']),
+        'status'    => $baris['ketersediaan'] === 'terisi' ? 'terisi' : 'kosong',
+        'ketersediaan' => $baris['ketersediaan'],
+        'dapat_dipesan' => $baris['ketersediaan'] === 'kosong',
+        'nama_penghuni' => $baris['nama_penghuni'] ?? null,
     ];
 }
 
@@ -70,8 +72,12 @@ function baris_kamar_ke_array(array $baris): array
 function get_semua_kamar(bool $sertakanPerawatan = false): array
 {
     $pdo = koneksi_database();
-    $sql = 'SELECT k.*, ' . SQL_STATUS_KAMAR . ' AS status_terhitung, ' . SQL_KAMAR_DITAHAN . ' AS ditahan FROM kamar k';
-    if (!$sertakanPerawatan) {
+    $sql = 'SELECT k.*, ' . SQL_KETERSEDIAAN_KAMAR . ' AS ketersediaan';
+    if ($sertakanPerawatan) {
+        $sql .= ' , p.nama AS nama_penghuni FROM kamar k LEFT JOIN penyewaan s ON s.kamar_aktif_unik=k.id
+            LEFT JOIN penghuni p ON p.id=s.penghuni_id';
+    } else {
+        $sql .= ' FROM kamar k';
         $sql .= " WHERE k.kondisi = 'aktif'";
     }
     $sql .= ' ORDER BY k.nomor';
@@ -84,7 +90,7 @@ function get_semua_kamar(bool $sertakanPerawatan = false): array
 function get_kamar_by_id(int $id): ?array
 {
     $pdo  = koneksi_database();
-    $stmt = $pdo->prepare('SELECT k.*, ' . SQL_STATUS_KAMAR . ' AS status_terhitung, ' . SQL_KAMAR_DITAHAN . ' AS ditahan FROM kamar k WHERE k.id = :id');
+    $stmt = $pdo->prepare('SELECT k.*, ' . SQL_KETERSEDIAAN_KAMAR . ' AS ketersediaan FROM kamar k WHERE k.id = :id');
     $stmt->execute(['id' => $id]);
     $baris = $stmt->fetch();
 
@@ -111,10 +117,8 @@ function get_kamar_tersedia(int $batas): array
 {
     $pdo  = koneksi_database();
     $stmt = $pdo->prepare(
-        "SELECT k.*, 'kosong' AS status_terhitung FROM kamar k
-         WHERE k.kondisi = 'aktif'
-           AND NOT EXISTS (SELECT 1 FROM penyewaan s WHERE s.kamar_id = k.id AND s.status = 'aktif')
-           AND NOT " . SQL_KAMAR_DITAHAN . "
+        "SELECT k.*, " . SQL_KETERSEDIAAN_KAMAR . " AS ketersediaan FROM kamar k
+         HAVING ketersediaan = 'kosong'
          ORDER BY k.nomor
          LIMIT :batas"
     );
@@ -124,30 +128,11 @@ function get_kamar_tersedia(int $batas): array
     return array_map('baris_kamar_ke_array', $stmt->fetchAll());
 }
 
-/**
- * Jumlah kamar per status (untuk admin, mencakup SEMUA kamar apa pun kondisinya).
- *
- * Kamar kosong berkondisi aktif dihitung terpisah dari perawatan. Pemesanan
- * yang disetujui tetap dihitung kosong sampai penyewaan aktif dimulai.
- *
- * @return array{total: int, kosong: int, terisi: int, perawatan: int}
- */
-function hitung_kamar_per_status(): array
+function hitung_kamar_per_status(?array $kamar = null): array
 {
-    $pdo   = koneksi_database();
-    $baris = $pdo->query(
-        "SELECT
-            COUNT(*) AS total,
-            SUM(" . SQL_STATUS_KAMAR . " = 'terisi') AS terisi,
-            SUM(kondisi = 'perawatan' AND " . SQL_STATUS_KAMAR . " = 'kosong') AS perawatan
-         FROM kamar k"
-    )->fetch();
-
-    $total     = (int) $baris['total'];
-    $terisi    = (int) $baris['terisi'];
-    $perawatan = (int) $baris['perawatan'];
-
-    return ['total' => $total, 'kosong' => $total - $terisi - $perawatan, 'terisi' => $terisi, 'perawatan' => $perawatan];
+    $kamar ??= get_semua_kamar(true);
+    return ['total'=>count($kamar)] + array_count_values(array_column($kamar, 'ketersediaan'))
+        + ['terisi'=>0,'kosong'=>0,'dipesan'=>0,'perawatan'=>0];
 }
 
 /** Apakah nomor kamar ini sudah dipakai kamar lain? (untuk validasi form) */
@@ -291,7 +276,7 @@ function hapus_kamar(int $id): array
 /** Kamar yang ditempati profil dari sesi penghuni, termasuk fasilitas dan foto. */
 function get_kamar_aktif_penghuni(int $penghuniId): ?array
 {
-    $stmt = koneksi_database()->prepare("SELECT k.*, 'terisi' AS status_terhitung
+    $stmt = koneksi_database()->prepare("SELECT k.*, 'terisi' AS ketersediaan
         FROM penyewaan s JOIN kamar k ON k.id = s.kamar_id WHERE s.penghuni_aktif_unik = ?");
     $stmt->execute([$penghuniId]);
     $baris = $stmt->fetch();

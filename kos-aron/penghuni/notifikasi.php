@@ -5,6 +5,7 @@ require_once __DIR__ . '/../data/notifikasi.php'; // juga memuat data tagihan, p
 $judulHalaman = 'Notifikasi';
 $menuAktif    = 'notifikasi';
 
+$halaman = filter_input(INPUT_GET, 'halaman', FILTER_VALIDATE_INT, ['options'=>['min_range'=>1,'max_range'=>1000000]]) ?: 1;
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $id = filter_input(INPUT_POST, 'notifikasi_id', FILTER_VALIDATE_INT);
     $token = $_POST['csrf_token'] ?? null;
@@ -12,16 +13,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         http_response_code(403);
         exit('Akses ditolak.');
     }
-    header('Location: notifikasi.php', true, 303);
+    header('Location: notifikasi.php?halaman=' . $halaman, true, 303);
     exit;
 }
 require __DIR__ . '/includes/header.php';
 
-$daftarNotifikasi = $penghuniLogin ? get_notifikasi_penghuni($penghuniLogin['id']) : [];
+$perHalaman = 20;
+$daftarNotifikasi = $penghuniLogin ? get_notifikasi_penghuni($penghuniLogin['id'], $perHalaman + 1, ($halaman - 1) * $perHalaman) : [];
+$adaBerikutnya = count($daftarNotifikasi) > $perHalaman;
+if ($adaBerikutnya) {
+    array_pop($daftarNotifikasi);
+}
 
 // Warna tepi kiri notifikasi mengikuti komponen .notice yang sudah ada.
 $kelasNotice = [
     'terlambat' => 'notice--galat',
+    'verifikasi' => 'notice--galat',
     'pengingat' => 'notice--peringatan',
     'lunas'     => 'notice--berhasil',
 ];
@@ -44,7 +51,7 @@ $kelasNotice = [
     <section class="panel">
         <div class="panel__head">
             <h2>Daftar Notifikasi</h2>
-            <span><?= jumlah_notifikasi_belum_dibaca($penghuniLogin['id']) ?> belum dibaca</span>
+            <span><?= $belumDibaca ?> belum dibaca</span>
         </div>
 
         <?php if (empty($daftarNotifikasi)): ?>
@@ -72,6 +79,12 @@ $kelasNotice = [
                     </li>
                 <?php endforeach; ?>
             </ul>
+        <?php endif; ?>
+        <?php if ($halaman > 1 || $adaBerikutnya): ?>
+            <nav class="form-aksi" aria-label="Halaman notifikasi">
+                <?php if ($halaman > 1): ?><a class="btn btn-outline btn-sm" href="?halaman=<?= $halaman - 1 ?>">Sebelumnya</a><?php endif; ?>
+                <?php if ($adaBerikutnya): ?><a class="btn btn-outline btn-sm" href="?halaman=<?= $halaman + 1 ?>">Berikutnya</a><?php endif; ?>
+            </nav>
         <?php endif; ?>
     </section>
 
